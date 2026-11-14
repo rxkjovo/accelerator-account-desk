@@ -113,4 +113,4 @@ public static class AccountPresentation
 
 - [x] Provide a Chinese-named launcher exe or folder alongside a brief Chinese usage guide. README documents default data location, optional `--data-dir`, user-operated official flows, expiry/cancellation semantics, build/test commands and backup via copying the data directory while the app is closed.
 - [x] Run the behavior tests, Release build, and published-exe smoke check. Verify UI persistence with a separate test data directory; reopen the delivered exe on the real empty user data directory for handoff.
-- [ ] Review the final change for state integrity, false success, sensitive credential storage and any invented eligibility/date claim. Resolve material findings, record output sizes/checksum, and report the clickable exe path with accurate test boundaries.
+- [x] Review the final change for state integrity, false success, sensitive credential storage and any invented eligibility/date claim. Resolve material findings, record output sizes/checksum, and report the clickable exe path with accurate test boundaries.

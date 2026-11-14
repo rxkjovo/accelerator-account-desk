@@ -1,134 +1,150 @@
 <Window x:Class="AcceleratorDesk.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="加速账户助手" Width="1320" Height="820" MinWidth="1100" MinHeight="680">
-  <Grid>
-    <Grid.ColumnDefinitions><ColumnDefinition Width="180" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-    <Border Background="#10171E" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0">
-      <Grid Margin="16,26,16,20">
-        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-        <StackPanel>
-          <Border Width="40" Height="40" Background="{StaticResource Accent}" CornerRadius="11" HorizontalAlignment="Left">
-            <TextBlock Text="A" FontSize="24" FontWeight="Bold" Foreground="#18210F" HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
-          <TextBlock Text="加速账户助手" FontSize="17" FontWeight="SemiBold" Margin="0,16,0,5" />
-          <TextBlock Text="ACCOUNT DESK" FontSize="10" Foreground="{StaticResource Muted}" />
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="加速账户助手" Width="1320" Height="820" MinWidth="1100" MinHeight="680"
+        WindowStyle="None" ResizeMode="CanResize" WindowStartupLocation="CenterScreen" UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Display" Style="{StaticResource {x:Type Window}}">
+  <shell:WindowChrome.WindowChrome><shell:WindowChrome CaptionHeight="44" ResizeBorderThickness="6" GlassFrameThickness="0" UseAeroCaptionButtons="False" /></shell:WindowChrome.WindowChrome>
+  <Border SizeChanged="Layout_SizeChanged" BorderBrush="#3A4032" BorderThickness="1" Background="{StaticResource Bg}" TextElement.FontFamily="Microsoft YaHei UI" TextElement.FontSize="14">
+    <Grid>
+      <Grid.RowDefinitions><RowDefinition Height="44" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+      <Grid Background="#191C16">
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="22,0,0,0">
+          <Path Data="M0,0 L12,0 L20,9 L12,18 L0,18 L8,9 Z M16,0 L24,0 L32,9 L24,18 L16,18 L24,9 Z" Fill="{StaticResource Accent}" Width="28" Height="17" Stretch="Fill" Margin="0,0,12,0" />
+          <TextBlock Text="加速账户助手" FontWeight="SemiBold" FontSize="12" Foreground="#E0E6D6" />
+          <TextBlock Text="本地工作台" Foreground="#A5AF98" FontSize="12" Margin="16,1,0,0" />
         </StackPanel>
-        <StackPanel Grid.Row="1" Margin="0,40,0,0">
-          <TextBlock Text="工作台" Style="{StaticResource FieldLabel}" Margin="10,0,0,12" />
-          <Button x:Name="AccountsNav" Content="◈    账号总览" Style="{StaticResource NavButton}" Click="AccountsNav_Click" />
-          <Button x:Name="PhonesNav" Content="▤    手机号" Style="{StaticResource NavButton}" Click="PhonesNav_Click" />
-          <Button x:Name="RedemptionsNav" Content="◷    兑换记录" Style="{StaticResource NavButton}" Click="RedemptionsNav_Click" />
-          <Button x:Name="SettingsNav" Content="⚙    设置与说明" Style="{StaticResource NavButton}" Click="SettingsNav_Click" />
-        </StackPanel>
-        <Border Grid.Row="3" Background="#18232C" CornerRadius="8" Padding="12">
-          <StackPanel><TextBlock Text="●  本地记录" Foreground="{StaticResource Cyan}" FontSize="12" />
-            <TextBlock Text="账号资料保存在这台电脑" FontSize="10" Foreground="{StaticResource Muted}" Margin="0,7,0,0" TextWrapping="Wrap" />
-            <TextBlock Text="v0.1.0" FontSize="10" Foreground="{StaticResource Muted}" Margin="0,9,0,0" /></StackPanel>
-        </Border>
-      </Grid>
-    </Border>
-    <Grid Grid.Column="1" Margin="26,24,26,14">
-      <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-      <Grid Margin="0,0,0,22">
-        <StackPanel><TextBlock x:Name="PageTitle" Text="账号总览" FontSize="26" FontWeight="SemiBold" />
-          <TextBlock x:Name="PageSubtitle" Text="账号、时长与到期进度，一处查看。" Foreground="{StaticResource Muted}" Margin="0,7,0,0" /></StackPanel>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-          <Button Content="刷新" Click="Refresh_Click" Margin="0,0,10,0" />
-          <Button x:Name="NewAccountButton" Content="＋  新增账号" Style="{StaticResource PrimaryButton}" Click="NewAccount_Click" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+          <Button Content="&#xE921;" Style="{StaticResource CaptionButton}" Click="Minimize_Click" AutomationProperties.Name="最小化" />
+          <Button Content="&#xE922;" Style="{StaticResource CaptionButton}" Click="Maximize_Click" AutomationProperties.Name="最大化或还原" />
+          <Button Content="&#xE8BB;" Style="{StaticResource CaptionButton}" Click="Close_Click" AutomationProperties.Name="关闭" />
         </StackPanel>
       </Grid>
-      <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,-12,22">
-        <Border Style="{StaticResource Card}" Margin="0,0,12,0" Padding="17,14">
-          <StackPanel><TextBlock Text="账号总数" Foreground="{StaticResource Muted}" FontSize="12" /><TextBlock x:Name="TotalCount" Text="0" FontSize="29" FontWeight="SemiBold" Margin="0,7,0,2" /><TextBlock Text="包含历史账号" FontSize="10" Foreground="{StaticResource Muted}" /></StackPanel>
+      <Grid Grid.Row="1">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="176" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+        <Border Background="#191C16" BorderBrush="#2B3025" BorderThickness="0,0,1,0">
+          <Grid Margin="12,26,12,20">
+            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+            <StackPanel>
+              <TextBlock Text="我的工作台" FontSize="12" Foreground="#A5AF98" Margin="16,0,0,18" />
+              <Button x:Name="AccountsNav" Style="{StaticResource NavButton}" Click="AccountsNav_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE716;" Style="{StaticResource NavIcon}" /><TextBlock Text="账号总览" Style="{StaticResource NavLabel}" /></StackPanel></Button>
+              <Button x:Name="PhonesNav" Style="{StaticResource NavButton}" Click="PhonesNav_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8EA;" Style="{StaticResource NavIcon}" /><TextBlock Text="手机号" Style="{StaticResource NavLabel}" /></StackPanel></Button>
+              <Button x:Name="RedemptionsNav" Style="{StaticResource NavButton}" Click="RedemptionsNav_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE81C;" Style="{StaticResource NavIcon}" /><TextBlock Text="兑换记录" Style="{StaticResource NavLabel}" /></StackPanel></Button>
+              <Border Height="1" Background="#2E3427" Margin="14,18,14,20" />
+              <Button x:Name="SettingsNav" Style="{StaticResource NavButton}" Click="SettingsNav_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE713;" Style="{StaticResource NavIcon}" /><TextBlock Text="设置与说明" Style="{StaticResource NavLabel}" /></StackPanel></Button>
+            </StackPanel>
+            <StackPanel Grid.Row="2" Margin="14,0,0,0">
+              <StackPanel Orientation="Horizontal"><Ellipse Width="5" Height="5" Fill="#8CA567" Margin="0,0,8,0" /><TextBlock Text="本地记录" FontSize="12" Foreground="#BAC3AC" /></StackPanel>
+              <TextBlock Text="数据保存在这台电脑" FontSize="12" Foreground="#A5AF98" Margin="13,8,0,0" />
+              <TextBlock Text="v0.2.0" FontFamily="Segoe UI" FontSize="12" Foreground="#A5AF98" Margin="13,8,0,0" />
+            </StackPanel>
+          </Grid>
         </Border>
-        <Border Style="{StaticResource Card}" Margin="0,0,12,0" Padding="17,14">
-          <StackPanel><TextBlock Text="时长有效" Foreground="{StaticResource Muted}" FontSize="12" /><TextBlock x:Name="ActiveCount" Text="0" Foreground="{StaticResource Accent}" FontSize="29" FontWeight="SemiBold" Margin="0,7,0,2" /><TextBlock Text="按已记录的实际到期时间" FontSize="10" Foreground="{StaticResource Muted}" /></StackPanel>
-        </Border>
-        <Border Style="{StaticResource Card}" Margin="0,0,12,0" Padding="17,14">
-          <StackPanel><TextBlock Text="三天内到期" Foreground="{StaticResource Muted}" FontSize="12" /><TextBlock x:Name="SoonCount" Text="0" Foreground="#F5CC7A" FontSize="29" FontWeight="SemiBold" Margin="0,7,0,2" /><TextBlock x:Name="ExpiredSummary" Text="已到期 0 个" FontSize="10" Foreground="{StaticResource Muted}" /></StackPanel>
-        </Border>
-        <Border Style="{StaticResource Card}" Margin="0,0,12,0" Padding="17,14">
-          <StackPanel><TextBlock Text="注销待跟进" Foreground="{StaticResource Muted}" FontSize="12" /><TextBlock x:Name="PendingCount" Text="0" Foreground="{StaticResource Cyan}" FontSize="29" FontWeight="SemiBold" Margin="0,7,0,2" /><TextBlock Text="已申请、等待中或待核实" FontSize="10" Foreground="{StaticResource Muted}" /></StackPanel>
-        </Border>
-      </UniformGrid>
-      <Grid Grid.Row="2">
-        <Grid x:Name="AccountsPage">
-          <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="16" /><ColumnDefinition Width="272" /></Grid.ColumnDefinitions>
-          <Border Style="{StaticResource Card}">
-            <Grid>
-              <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-              <Grid Margin="14">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="100" /><ColumnDefinition Width="128" /></Grid.ColumnDefinitions>
-                <TextBox x:Name="AccountSearch" AutomationProperties.Name="搜索账号" ToolTip="搜索账号、备注或关联手机号" TextChanged="AccountFilters_Changed" />
-                <TextBlock Text="搜索账号 / 备注 / 手机号" IsHitTestVisible="False" Foreground="#71818F" Margin="12,0,0,0" VerticalAlignment="Center">
-                  <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Text, ElementName=AccountSearch}" Value=""><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
-                </TextBlock>
-                <ComboBox x:Name="ProviderFilter" Grid.Column="1" Margin="8,0,0,0" AutomationProperties.Name="筛选登录渠道" SelectionChanged="AccountFilters_Changed" />
-                <ComboBox x:Name="MembershipFilter" Grid.Column="2" Margin="8,0,0,0" AutomationProperties.Name="筛选时长状态" SelectionChanged="AccountFilters_Changed" />
-              </Grid>
-              <Grid Grid.Row="1">
-                <DataGrid x:Name="AccountsGrid" AutomationProperties.Name="账号列表" SelectionChanged="AccountsGrid_SelectionChanged" MouseDoubleClick="AccountsGrid_DoubleClick">
-                  <DataGrid.Columns>
-                    <DataGridTextColumn Header="渠道" Binding="{Binding Provider}" Width="62" />
-                    <DataGridTextColumn Header="账号" Binding="{Binding Identifier}" Width="125" />
-                    <DataGridTextColumn Header="备注" Binding="{Binding Nickname}" Width="100" />
-                    <DataGridTextColumn Header="时长状态" Binding="{Binding Membership}" Width="100" />
-                    <DataGridTextColumn Header="到期时间" Binding="{Binding Expiry}" Width="148" />
-                    <DataGridTextColumn Header="手机号" Binding="{Binding Phone}" Width="120" />
-                    <DataGridTextColumn Header="注销状态" Binding="{Binding Cancellation}" Width="95" />
-                  </DataGrid.Columns>
-                </DataGrid>
-                <Border x:Name="AccountEmpty" Background="#141C25" Margin="0,39,0,0">
-                  <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="350" Margin="25">
-                    <TextBlock Text="＋" FontSize="35" Foreground="{StaticResource Cyan}" HorizontalAlignment="Center" />
-                    <TextBlock x:Name="EmptyTitle" Text="从第一个账号开始" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,14,0,9" />
-                    <TextBlock x:Name="EmptyDescription" Text="添加已有 QQ 或微博账号，记录实际到账时长和到期日期。" Style="{StaticResource MutedText}" TextAlignment="Center" />
-                    <Button x:Name="EmptyAddButton" Content="添加账号" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Center" Margin="0,20,0,0" Click="NewAccount_Click" />
+        <Grid Grid.Column="1" Margin="24,20,24,12">
+          <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+          <Grid Margin="0,0,0,18">
+            <StackPanel><TextBlock x:Name="PageTitle" Text="账号总览" FontSize="23" FontWeight="SemiBold" /><TextBlock x:Name="PageSubtitle" Text="账号、时长与到期进度，一处查看。" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,6,0,0" /></StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+              <Button Click="Refresh_Click" Style="{StaticResource QuietButton}" Margin="0,0,12,0"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE72C;" Style="{StaticResource NavIcon}" FontSize="12" Margin="0,0,7,0" /><TextBlock Text="刷新" Style="{StaticResource NavLabel}" /></StackPanel></Button>
+              <Button x:Name="NewAccountButton" Content="新增账号" Style="{StaticResource PrimaryButton}" Click="NewAccount_Click" Padding="24,10" />
+            </StackPanel>
+          </Grid>
+          <Grid Grid.Row="1">
+            <Grid x:Name="AccountsPage">
+              <Grid.RowDefinitions><RowDefinition x:Name="HeroRow" Height="154" /><RowDefinition x:Name="WorkflowRow" Height="88" /><RowDefinition x:Name="SummaryRow" Height="50" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+              <Border CornerRadius="7" ClipToBounds="True" Background="#23251B">
+                <Grid>
+                  <Image Source="Assets/game-atmosphere.jpg" Stretch="UniformToFill" HorizontalAlignment="Right" Width="690" Opacity="0.78" RenderOptions.BitmapScalingMode="HighQuality" />
+                  <Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5"><GradientStop Color="#FF20231C" Offset="0" /><GradientStop Color="#F520231C" Offset="0.28" /><GradientStop Color="#9C20231C" Offset="0.58" /><GradientStop Color="#2020231C" Offset="1" /></LinearGradientBrush></Rectangle.Fill></Rectangle>
+                  <Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#0020231C" Offset="0.45" /><GradientStop Color="#B520231C" Offset="1" /></LinearGradientBrush></Rectangle.Fill></Rectangle>
+                  <StackPanel VerticalAlignment="Center" Margin="28,0,0,0">
+                    <StackPanel x:Name="HeroIntro" Orientation="Horizontal" Margin="0,0,0,10"><Border Width="3" Height="12" Background="{StaticResource Accent}" Margin="0,0,9,0" /><TextBlock Text="为下一场游戏做好准备" FontSize="12" Foreground="#C6D1B7" /></StackPanel>
+                    <TextBlock Text="账号与时长，尽在掌握。" FontSize="27" FontWeight="Bold" Foreground="#F2F5E9" />
+                    <TextBlock x:Name="HeroDescription" Text="管理 QQ / 微博账号，记下每一次兑换与到期。" FontSize="12" Foreground="#ADB7A0" Margin="0,12,0,0" />
                   </StackPanel>
+                </Grid>
+              </Border>
+              <Border Grid.Row="1" BorderBrush="#333A2B" BorderThickness="0,0,0,1" Padding="4,14,4,13">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center"><TextBlock Text="01" Style="{StaticResource StepNumber}" /><StackPanel><TextBlock Text="注册 / 登录平台账号" FontSize="12" Foreground="#DCE3D2" /><Button x:Name="ProviderEntryButton" Content="打开 QQ 注册" Click="ProviderEntry_Click" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" Padding="0,5,0,0" MinHeight="24" FontSize="12" Foreground="{StaticResource Accent}" /></StackPanel></StackPanel>
+                  <Border Grid.Column="1" BorderBrush="#333A2B" BorderThickness="1,0,0,0" Padding="22,0,0,0"><StackPanel Orientation="Horizontal" VerticalAlignment="Center"><TextBlock Text="02" Style="{StaticResource StepNumber}" /><StackPanel><TextBlock Text="完成客户端授权" FontSize="12" Foreground="#DCE3D2" /><Button Content="打开迅雷客户端" Click="OpenClient_Click" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" Padding="0,5,0,0" MinHeight="24" FontSize="12" Foreground="{StaticResource Accent}" /></StackPanel></StackPanel></Border>
+                  <Border Grid.Column="2" BorderBrush="#333A2B" BorderThickness="1,0,0,0" Padding="22,0,0,0"><StackPanel Orientation="Horizontal" VerticalAlignment="Center"><TextBlock Text="03" Style="{StaticResource StepNumber}" /><StackPanel><TextBlock Text="兑换后，记录实际结果" FontSize="12" Foreground="#DCE3D2" /><Button x:Name="NewRedemptionButton" Content="记录兑换结果" Click="NewRedemption_Click" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" Padding="0,5,0,0" MinHeight="24" FontSize="12" Foreground="{StaticResource Accent}" IsEnabled="False" ToolTip="先在列表中选择一个账号" /></StackPanel></StackPanel></Border>
+                </Grid>
+              </Border>
+              <Grid Grid.Row="2" Margin="0,0,0,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                  <TextBlock Text="全部账号" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" /><TextBlock x:Name="TotalCount" Text="0" FontSize="17" FontFamily="Segoe UI" FontWeight="SemiBold" Margin="9,0,25,0" />
+                  <TextBlock Text="时长有效" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" /><TextBlock x:Name="ActiveCount" Text="0" FontSize="17" FontFamily="Segoe UI" FontWeight="SemiBold" Foreground="#B9EE54" Margin="9,0,25,0" />
+                  <TextBlock Text="三天内到期" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" /><TextBlock x:Name="SoonCount" Text="0" FontSize="17" FontFamily="Segoe UI" FontWeight="SemiBold" Foreground="#D4B476" Margin="9,0,14,0" />
+                  <TextBlock x:Name="ExpiredSummary" Text="已到期 0 个" FontSize="12" Foreground="#A5AF98" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"><TextBlock Text="注销待跟进" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" /><TextBlock x:Name="PendingCount" Text="0" FontSize="17" FontFamily="Segoe UI" FontWeight="SemiBold" Margin="9,0,3,0" /></StackPanel>
+              </Grid>
+              <Grid Grid.Row="3">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="238" /></Grid.ColumnDefinitions>
+                <Border Style="{StaticResource Card}">
+                  <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="60" /><RowDefinition Height="*" /><RowDefinition Height="44" /></Grid.RowDefinitions>
+                    <Grid Margin="12,11">
+                      <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="99" /><ColumnDefinition Width="117" /></Grid.ColumnDefinitions>
+                      <TextBox x:Name="AccountSearch" AutomationProperties.Name="搜索账号" ToolTip="搜索账号、备注或关联手机号" TextChanged="AccountFilters_Changed" Padding="11,7" FontSize="12" />
+                      <TextBlock Text="搜索账号 / 备注 / 手机号" IsHitTestVisible="False" Foreground="#A5AF98" FontSize="12" Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Text, ElementName=AccountSearch}" Value=""><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                      </TextBlock>
+                      <ComboBox x:Name="ProviderFilter" Grid.Column="1" Margin="7,0,0,0" FontSize="12" AutomationProperties.Name="筛选登录渠道" SelectionChanged="AccountFilters_Changed" />
+                      <ComboBox x:Name="MembershipFilter" Grid.Column="2" Margin="7,0,0,0" FontSize="12" AutomationProperties.Name="筛选时长状态" SelectionChanged="AccountFilters_Changed" />
+                    </Grid>
+                    <Grid Grid.Row="1">
+                      <DataGrid x:Name="AccountsGrid" AutomationProperties.Name="账号列表" SelectionChanged="AccountsGrid_SelectionChanged" MouseDoubleClick="AccountsGrid_DoubleClick" FontSize="13">
+                        <DataGrid.Columns>
+                          <DataGridTextColumn Header="渠道" Binding="{Binding Provider}" Width="58" ElementStyle="{StaticResource GridCellText}" />
+                          <DataGridTextColumn Header="账号" Binding="{Binding Identifier}" Width="130"><DataGridTextColumn.ElementStyle><Style TargetType="TextBlock" BasedOn="{StaticResource GridCellText}"><Setter Property="FontFamily" Value="Segoe UI" /><Setter Property="FontSize" Value="13" /><Setter Property="Foreground" Value="#E3EACF" /></Style></DataGridTextColumn.ElementStyle></DataGridTextColumn>
+                          <DataGridTextColumn Header="备注" Binding="{Binding Nickname}" Width="90" ElementStyle="{StaticResource GridCellText}" />
+                          <DataGridTextColumn Header="时长状态" Binding="{Binding Membership}" Width="100" ElementStyle="{StaticResource MembershipText}" />
+                          <DataGridTextColumn Header="到期时间" Binding="{Binding Expiry}" Width="139" ElementStyle="{StaticResource GridCellText}" />
+                          <DataGridTextColumn Header="手机号" Binding="{Binding Phone}" Width="116" ElementStyle="{StaticResource GridCellText}" />
+                          <DataGridTextColumn Header="注销状态" Binding="{Binding Cancellation}" Width="92" ElementStyle="{StaticResource GridCellText}" />
+                        </DataGrid.Columns>
+                      </DataGrid>
+                      <Border x:Name="AccountEmpty" Background="{StaticResource Panel}" Margin="0,40,0,0">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="350" Margin="18,10">
+                          <Path Data="M2,5 L42,5 L42,33 L2,33 Z M10,13 L20,13 M10,20 L30,20 M10,26 L24,26 M33,0 L33,10" Stroke="#65734F" StrokeThickness="1.3" Width="44" Height="34" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,9" />
+                          <TextBlock x:Name="EmptyTitle" Text="从第一个账号开始" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,7" />
+                          <TextBlock x:Name="EmptyDescription" Text="添加已有 QQ 或微博账号，记录实际到账时长和到期日期。" Style="{StaticResource MutedText}" FontSize="12" TextAlignment="Center" />
+                          <Button x:Name="EmptyAddButton" Content="添加账号" HorizontalAlignment="Center" Margin="0,12,0,0" Click="NewAccount_Click" Padding="18,7" MinHeight="32" FontSize="12" />
+                        </StackPanel>
+                      </Border>
+                    </Grid>
+                    <Border Grid.Row="2" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="12,0"><Grid><TextBlock x:Name="AccountListSummary" Text="共 0 个账号" Foreground="#A5AF98" VerticalAlignment="Center" FontSize="12" /><TextBlock Text="双击账号可编辑" FontSize="12" Foreground="#A5AF98" HorizontalAlignment="Right" VerticalAlignment="Center" /></Grid></Border>
+                  </Grid>
+                </Border>
+                <Border Grid.Column="2" Background="#20241C" CornerRadius="6" Padding="18,17">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                      <TextBlock Text="账号详情" FontSize="12" Foreground="#A5AF98" />
+                      <TextBlock x:Name="DetailIdentifier" Text="选择一个账号" FontSize="19" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,12,0,6" />
+                      <TextBlock x:Name="DetailSubtitle" Text="在左侧查看和选择账号" Foreground="{StaticResource Muted}" TextWrapping="Wrap" FontSize="12" />
+                      <Border Background="#2F3924" CornerRadius="3" Padding="8,5" HorizontalAlignment="Left" Margin="0,18,0,10"><TextBlock x:Name="DetailMembership" Text="未记录到期" Style="{StaticResource MembershipText}" FontSize="12" /></Border>
+                      <TextBlock x:Name="DetailExpiry" Text="到期时间：未记录" FontSize="12" Foreground="#B4BDA8" TextWrapping="Wrap" />
+                      <Border Height="1" Background="#353D2C" Margin="0,15" />
+                      <TextBlock x:Name="DetailCancellation" Text="注销状态：未记录" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" />
+                      <TextBlock x:Name="DetailWait" Text="官方等待期限：未知" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,8,0,0" TextWrapping="Wrap" />
+                      <Grid Margin="0,18,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><Button x:Name="EditAccountButton" Content="编辑资料" Click="EditAccount_Click" MinHeight="32" Padding="8,6" FontSize="12" IsEnabled="False" /><Button x:Name="CopyAccountButton" Grid.Column="1" Content="复制账号" Click="CopyAccount_Click" MinHeight="32" Padding="8,6" FontSize="12" Margin="8,0,0,0" IsEnabled="False" /></Grid>
+                    </StackPanel>
+                  </ScrollViewer>
                 </Border>
               </Grid>
-              <Grid Grid.Row="2" Margin="14,10">
-                <TextBlock x:Name="AccountListSummary" Text="共 0 个账号" Foreground="{StaticResource Muted}" VerticalAlignment="Center" FontSize="11" />
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button x:Name="CopyAccountButton" Content="复制账号" Click="CopyAccount_Click" MinHeight="30" Padding="10,5" Margin="0,0,8,0" IsEnabled="False" /><Button x:Name="EditAccountButton" Content="编辑" Click="EditAccount_Click" MinHeight="30" Padding="13,5" IsEnabled="False" /></StackPanel>
-              </Grid>
             </Grid>
-          </Border>
-          <Border Grid.Column="2" Style="{StaticResource Card}" Padding="17">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-              <StackPanel>
-                <TextBlock Text="当前账号" FontSize="11" Foreground="{StaticResource Muted}" />
-                <TextBlock x:Name="DetailIdentifier" Text="选择一个账号" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,10,0,4" />
-                <TextBlock x:Name="DetailSubtitle" Text="在左侧查看和选择账号" Foreground="{StaticResource Muted}" TextWrapping="Wrap" FontSize="11" />
-                <Border Background="#1E3027" CornerRadius="5" Padding="9,6" Margin="0,16,0,0"><TextBlock x:Name="DetailMembership" Text="未记录到期" Foreground="{StaticResource Accent}" FontSize="11" /></Border>
-                <TextBlock x:Name="DetailExpiry" Text="到期时间：未记录" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,10,0,0" TextWrapping="Wrap" />
-                <TextBlock x:Name="DetailCancellation" Text="注销状态：未记录" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,6,0,0" TextWrapping="Wrap" />
-                <TextBlock x:Name="DetailWait" Text="官方等待期限：未知" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,6,0,0" TextWrapping="Wrap" />
-                <Border Height="1" Background="{StaticResource Line}" Margin="0,20" />
-                <TextBlock Text="操作流程" FontWeight="SemiBold" Margin="0,0,0,14" />
-                <TextBlock Text="01   注册 / 登录平台账号" FontSize="12" />
-                <TextBlock Text="在官方入口完成注册与验证" FontSize="10" Foreground="{StaticResource Muted}" Margin="23,5,0,10" />
-                <Button x:Name="ProviderEntryButton" Content="打开 QQ 注册" Click="ProviderEntry_Click" HorizontalContentAlignment="Center" />
-                <TextBlock Text="02   登录迅雷游戏加速器" FontSize="12" Margin="0,20,0,0" />
-                <TextBlock Text="在客户端完成 QQ / 微博授权" FontSize="10" Foreground="{StaticResource Muted}" Margin="23,5,0,10" />
-                <Button Content="打开迅雷客户端" Click="OpenClient_Click" />
-                <TextBlock Text="03   兑换并记录时长" FontSize="12" Margin="0,20,0,0" />
-                <TextBlock Text="使用官方兑换入口，保存实际结果" FontSize="10" Foreground="{StaticResource Muted}" Margin="23,5,0,10" />
-                <Button x:Name="NewRedemptionButton" Content="记录兑换结果" Click="NewRedemption_Click" IsEnabled="False" />
-                <TextBlock Text="验证码、授权和注销确认由你在官方界面完成。" Style="{StaticResource MutedText}" FontSize="10" Margin="0,20,0,0" />
-              </StackPanel>
-            </ScrollViewer>
-          </Border>
-        </Grid>
         <Grid x:Name="PhonesPage" Visibility="Collapsed">
           <Border Style="{StaticResource Card}" Padding="18">
             <Grid>
               <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-              <Grid><TextBlock Text="我的手机号" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" /><Button Content="＋  添加手机号" HorizontalAlignment="Right" Style="{StaticResource PrimaryButton}" Click="NewPhone_Click" /></Grid>
+              <Grid><TextBlock Text="我的手机号" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" /><Button Content="添加手机号" HorizontalAlignment="Right" Style="{StaticResource PrimaryButton}" Click="NewPhone_Click" /></Grid>
               <TextBlock Grid.Row="1" Text="查看号码关联的账号和官方限制说明；期限未知时保留为空。" Style="{StaticResource MutedText}" Margin="0,11,0,15" />
               <Grid Grid.Row="2">
                 <DataGrid x:Name="PhonesGrid" AutomationProperties.Name="手机号列表" MouseDoubleClick="PhonesGrid_DoubleClick">
-                  <DataGrid.Columns><DataGridTextColumn Header="号码备注" Binding="{Binding Label}" Width="150" /><DataGridTextColumn Header="手机号" Binding="{Binding Number}" Width="145" /><DataGridTextColumn Header="关联账号" Binding="{Binding Accounts}" Width="100" /><DataGridTextColumn Header="官方提示限制至" Binding="{Binding Restriction}" Width="165" /><DataGridTextColumn Header="官方说明" Binding="{Binding Notice}" Width="*" MinWidth="200" /></DataGrid.Columns>
+                  <DataGrid.Columns><DataGridTextColumn Header="号码备注" Binding="{Binding Label}" Width="150" ElementStyle="{StaticResource GridCellText}" /><DataGridTextColumn Header="手机号" Binding="{Binding Number}" Width="145" ElementStyle="{StaticResource GridCellText}" /><DataGridTextColumn Header="关联账号" Binding="{Binding Accounts}" Width="100" ElementStyle="{StaticResource GridCellText}" /><DataGridTextColumn Header="官方提示限制至" Binding="{Binding Restriction}" Width="165" ElementStyle="{StaticResource GridCellText}" /><DataGridTextColumn Header="官方说明" Binding="{Binding Notice}" Width="*" MinWidth="200" ElementStyle="{StaticResource GridCellText}" /></DataGrid.Columns>
                 </DataGrid>
                 <TextBlock x:Name="PhoneEmpty" Text="还没有手机号。点击右上角添加本人号码。" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Grid>
@@ -140,11 +156,11 @@
           <Border Style="{StaticResource Card}" Padding="18">
             <Grid>
               <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-              <Grid><TextBlock Text="兑换记录" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" /><Button Content="＋  记录兑换结果" HorizontalAlignment="Right" Style="{StaticResource PrimaryButton}" Click="NewRedemption_Click" /></Grid>
+              <Grid><TextBlock Text="兑换记录" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" /><Button Content="记录兑换结果" HorizontalAlignment="Right" Style="{StaticResource PrimaryButton}" Click="NewRedemption_Click" /></Grid>
               <TextBlock Grid.Row="1" Text="成功、失败和待确认分别保存。只有明确成功并填写的到期时间才会更新账号。" Style="{StaticResource MutedText}" Margin="0,11,0,15" />
               <Grid Grid.Row="2">
                 <DataGrid x:Name="RedemptionsGrid" AutomationProperties.Name="兑换记录列表" MouseDoubleClick="RedemptionsGrid_DoubleClick">
-                  <DataGrid.Columns><DataGridTextColumn Header="账号" Binding="{Binding Account}" Width="115" /><DataGridTextColumn Header="渠道" Binding="{Binding Provider}" Width="60" /><DataGridTextColumn Header="口令" Binding="{Binding Code}" Width="110" /><DataGridTextColumn Header="结果" Binding="{Binding Outcome}" Width="72" /><DataGridTextColumn Header="兑换时间" Binding="{Binding Time}" Width="150" /><DataGridTextColumn Header="到账时长" Binding="{Binding Duration}" Width="95" /><DataGridTextColumn Header="实际到期" Binding="{Binding Expiry}" Width="150" /><DataGridTextColumn Header="说明" Binding="{Binding Note}" Width="*" MinWidth="150" /></DataGrid.Columns>
+                  <DataGrid.Columns><DataGridTextColumn Header="账号" Binding="{Binding Account}" Width="115" ElementStyle="{StaticResource GridCellText}" /><DataGridTextColumn Header="渠道" Binding="{Binding Provider}" Width="60" ElementStyle="{StaticResource GridCellText}" /><DataGridTextColumn Header="口令" Binding="{Binding Code}" Width="110" ElementStyle="{StaticResource GridCellText}" /><DataGridTextColumn Header="结果" Binding="{Binding Outcome}" Width="72" ElementStyle="{StaticResource GridCellText}" /><DataGridTextColumn Header="兑换时间" Binding="{Binding Time}" Width="150" ElementStyle="{StaticResource GridCellText}" /><DataGridTextColumn Header="到账时长" Binding="{Binding Duration}" Width="95" ElementStyle="{StaticResource GridCellText}" /><DataGridTextColumn Header="实际到期" Binding="{Binding Expiry}" Width="150" ElementStyle="{StaticResource GridCellText}" /><DataGridTextColumn Header="说明" Binding="{Binding Note}" Width="*" MinWidth="150" ElementStyle="{StaticResource GridCellText}" /></DataGrid.Columns>
                 </DataGrid>
                 <TextBlock x:Name="RedemptionEmpty" Text="还没有兑换记录。完成官方兑换后，在这里记下结果。" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Grid>
@@ -174,11 +190,14 @@
             </Border>
           </StackPanel>
         </ScrollViewer>
-      </Grid>
-      <Grid Grid.Row="3" Margin="0,13,0,0">
-        <TextBlock x:Name="StatusText" Text="正在读取本地记录…" Foreground="{StaticResource Muted}" FontSize="10" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,140,0" />
-        <Button x:Name="ExportButton" Content="导出当前列表 ↗" Click="ExportCurrent_Click" HorizontalAlignment="Right" MinHeight="26" Padding="8,4" FontSize="10" Background="Transparent" BorderThickness="0" Foreground="{StaticResource Cyan}" />
+
+          </Grid>
+          <Grid Grid.Row="2" Margin="0,10,0,0">
+            <TextBlock x:Name="StatusText" Text="正在读取本地记录…" Foreground="#A5AF98" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,140,0" />
+            <Button x:Name="ExportButton" Content="导出当前列表" Click="ExportCurrent_Click" HorizontalAlignment="Right" MinHeight="26" Padding="8,4" FontSize="12" Style="{StaticResource QuietButton}" />
+          </Grid>
+        </Grid>
       </Grid>
     </Grid>
-  </Grid>
+  </Border>
 </Window>

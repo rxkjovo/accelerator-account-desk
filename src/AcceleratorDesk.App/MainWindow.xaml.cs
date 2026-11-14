@@ -121,8 +121,8 @@ public partial class MainWindow : Window
         var navs = new[] { (AccountsNav, "accounts"), (PhonesNav, "phones"), (RedemptionsNav, "redemptions"), (SettingsNav, "settings") };
         foreach (var (button, key) in navs)
         {
-            button.Background = key == page ? new SolidColorBrush(Color.FromRgb(38, 58, 42)) : Brushes.Transparent;
-            button.Foreground = (Brush)FindResource(key == page ? "Accent" : "Muted");
+            button.Background = key == page ? new SolidColorBrush(Color.FromRgb(48, 58, 36)) : Brushes.Transparent;
+            button.Foreground = new SolidColorBrush(key == page ? Color.FromRgb(185, 238, 84) : Color.FromRgb(160, 167, 151));
         }
         (PageTitle.Text, PageSubtitle.Text) = page switch
         {
@@ -134,7 +134,24 @@ public partial class MainWindow : Window
         ExportButton.Visibility = page == "settings" ? Visibility.Collapsed : Visibility.Visible;
     }
 
+    private void Layout_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (HeroRow is null) return;
+        var compact = e.NewSize.Height < 740;
+        HeroRow.Height = new GridLength(compact ? 80 : 154);
+        WorkflowRow.Height = new GridLength(compact ? 68 : 88);
+        SummaryRow.Height = new GridLength(compact ? 44 : 50);
+        HeroIntro.Visibility = HeroDescription.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     private void SetStatus(string message) => StatusText.Text = message;
+    private void Minimize_Click(object sender, RoutedEventArgs e) => SystemCommands.MinimizeWindow(this);
+    private void Maximize_Click(object sender, RoutedEventArgs e)
+    {
+        if (WindowState == WindowState.Maximized) SystemCommands.RestoreWindow(this);
+        else SystemCommands.MaximizeWindow(this);
+    }
+    private void Close_Click(object sender, RoutedEventArgs e) => SystemCommands.CloseWindow(this);
     private void RunUi(Action action)
     {
         try { action(); }

@@ -59,8 +59,13 @@ public partial class MainWindow
     {
         if (_accounts.Count == 0) { SetStatus("先添加一个账号，再记录兑换结果。"); Navigate("accounts"); return; }
         var selectedAccount = (AccountsGrid.SelectedItem as AccountRow)?.Record.Id;
-        var dialog = new RedemptionDialog(redemption, _accounts, selectedAccount, _repository.SaveRedemption) { Owner = this };
-        if (dialog.ShowDialog() == true) { Reload(redemption?.AccountId ?? selectedAccount); SetStatus("兑换结果已保存 · " + DateTime.Now.ToString("HH:mm")); }
+        Guid? savedAccount = redemption?.AccountId ?? selectedAccount;
+        var dialog = new RedemptionDialog(redemption, _accounts, selectedAccount, value =>
+        {
+            _repository.SaveRedemption(value);
+            savedAccount = value.AccountId;
+        }) { Owner = this };
+        if (dialog.ShowDialog() == true) { Reload(savedAccount); SetStatus("兑换结果已保存 · " + DateTime.Now.ToString("HH:mm")); }
     }
     private void NewRedemption_Click(object sender, RoutedEventArgs e) => RunUi(() => ShowRedemptionEditor(null));
     private void EditRedemption_Click(object sender, RoutedEventArgs e) => RunUi(() =>

@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-15-desktop-assistant-design.md`
 
+**Authorized visual revision:** `docs/superpowers/specs/2026-11-15-ui-redesign.md` records the user's later choice of a dark gaming client and the readability correction.
+
 ## Global Constraints
 
 - Windows desktop exe; Chinese product UI.
@@ -77,11 +79,11 @@ public static class AccountPresentation
 }
 ```
 
-- [ ] Write integration tests first. Examples: fresh database has zero records; reopen repository preserves QQ/Weibo and phone link; same provider+identifier cannot create duplicates; same identifier on different providers is allowed; null expiry displays `未记录到期`; expiry equal to fixture clock displays `已到期`; expiry within three days displays `即将到期`; later expiry displays `使用中`; unknown restriction remains null; completed cancellation preserves history and requires a completion date; failed redemption never advances account; successful redemption sets `Redeemed` and uses only an explicitly supplied expiry; updating one redemption does not create a second record or reapply older expiry; invalid foreign keys do not create partial writes; quoted/Unicode account notes round-trip safely.
-- [ ] Run failing behavior tests against unimplemented members, preserving the RED output in the task report.
-- [ ] Implement validated parameterized SQLite storage. Empty identifiers/codes, malformed phone numbers, duplicate identities, impossible cancellation timestamps, and invalid foreign-key links receive actionable validation errors. A membership expiry may be in the past. Waiting states may have no known deadline. Successful redemption persistence and its account update occur atomically. Keep a previously supplied account expiry if a later success has unknown expiry; never move the expiry backward when editing an older redemption.
-- [ ] Run `.tools/dotnet/dotnet.exe run --project tests/AcceleratorDesk.Tests -c Release` and record the GREEN result.
-- [ ] Commit only Task 1 source/tests and provide a report with exact API, test output, and any concerns.
+- [x] Write integration tests first. Examples: fresh database has zero records; reopen repository preserves QQ/Weibo and phone link; same provider+identifier cannot create duplicates; same identifier on different providers is allowed; null expiry displays `未记录到期`; expiry equal to fixture clock displays `已到期`; expiry within three days displays `即将到期`; later expiry displays `使用中`; unknown restriction remains null; completed cancellation preserves history and requires a completion date; failed redemption never advances account; successful redemption sets `Redeemed` and uses only an explicitly supplied expiry; updating one redemption does not create a second record or reapply older expiry; invalid foreign keys do not create partial writes; quoted/Unicode account notes round-trip safely.
+- [x] Run failing behavior tests against unimplemented members, preserving the RED output in the task report.
+- [x] Implement validated parameterized SQLite storage. Empty identifiers/codes, malformed phone numbers, duplicate identities, impossible cancellation timestamps, and invalid foreign-key links receive actionable validation errors. A membership expiry may be in the past. Waiting states may have no known deadline. Successful redemption persistence and its account update occur atomically. Keep a previously supplied account expiry if a later success has unknown expiry; never move the expiry backward when editing an older redemption.
+- [x] Run `.tools/dotnet/dotnet.exe run --project tests/AcceleratorDesk.Tests -c Release` and record the GREEN result.
+- [x] Commit only Task 1 source/tests and provide a report with exact API, test output, and any concerns.
 
 ### Task 2: Desktop UI and official-entry workflow
 
@@ -89,26 +91,26 @@ public static class AccountPresentation
 
 **Consumes:** Task 1 contracts, unchanged. UI uses `DeskRepository` to load fresh records after each successful save.
 
-- [ ] Create a WPF app referencing Core. Launch with `--data-dir` support, explicit startup errors, and no sample user records.
-- [ ] Build a dark graphite interface with lime/cyan accents, a left navigation, four count cards, searchable/filterable account list, a useful empty state, and a selected-account three-step panel. Keep controls keyboard accessible and visible at 1280×800 and 1100×720.
-- [ ] Provide modal account, phone, and redemption editors. Input dates use the visible format `yyyy-MM-dd HH:mm` in the computer's local time zone; null fields remain null. Account editing covers provider, identifier, phone link, stage, actual expiry, cancellation state/timestamps/official notice and notes. Phone editing covers number, label and official restriction date/notice. Redemption editing covers code, supplied outcome, actual duration/expiry and result note.
-- [ ] Add phone and redemption views, account copying, masked phone display, filtered CSV export with formula-prefix escaping, settings for the user-selected accelerator exe, and open-data-folder action. Selecting an exe is required before launching a client; never execute arbitrary URL schemes.
-- [ ] QQ button opens the verified HTTPS official registration page. Client buttons launch the selected local accelerator executable and clearly direct the user to QQ/Weibo login or redemption within that official client. Launching a page never marks an account as registered or a redemption as successful.
-- [ ] Add in-app upcoming/expired counts and refresh them every minute. User-triggered saves display saved status only after repository success; validation errors leave editors open.
-- [ ] Build and manually validate the desktop UI, including create/edit/reload and actual empty state. Do not submit any external signup, SMS, authorization, redemption or cancellation during validation.
-- [ ] Commit only Task 2 source and record tested behaviors.
+- [x] Create a WPF app referencing Core. Launch with `--data-dir` support, explicit startup errors, and no sample user records.
+- [x] Build a warm charcoal / olive interface with lime actions, a left navigation, compact statistics, searchable/filterable account list, a useful empty state, and a three-step official-entry strip with selected-account details, per the authorized visual revision. Keep controls keyboard accessible and visible at 1280×800 and 1100×720.
+- [x] Provide modal account, phone, and redemption editors. Input dates use the visible format `yyyy-MM-dd HH:mm` in the computer's local time zone; null fields remain null. Account editing covers provider, identifier, phone link, stage, actual expiry, cancellation state/timestamps/official notice and notes. Phone editing covers number, label and official restriction date/notice. Redemption editing covers code, supplied outcome, actual duration/expiry and result note.
+- [x] Add phone and redemption views, account copying, masked phone display, filtered CSV export with formula-prefix escaping, settings for the user-selected accelerator exe, and open-data-folder action. Selecting an exe is required before launching a client; never execute arbitrary URL schemes.
+- [x] QQ button opens the verified HTTPS official registration page. Client buttons launch the selected local accelerator executable and clearly direct the user to QQ/Weibo login or redemption within that official client. Launching a page never marks an account as registered or a redemption as successful.
+- [x] Add in-app upcoming/expired counts and refresh them every minute. User-triggered saves display saved status only after repository success; validation errors leave editors open.
+- [x] Build and validate the desktop UI through real WPF form save/reload checks, six offscreen layouts and a published-window accessibility check. Actual desktop capture/input was unavailable; full physical click-through remains unverified, as recorded in the validation report. Do not submit any external signup, SMS, authorization, redemption or cancellation during validation.
+- [x] Commit only Task 2 source and record tested behaviors.
 
 ### Task 3: Packaging and delivery
 
 **Files:** scripts, README, plan/spec status and release output.
 
-- [ ] Add PowerShell scripts resolving the project-local SDK first. `scripts/test.ps1` runs core behavior tests. `scripts/build.ps1` builds and publishes `win-x64` self-contained output to `dist/AcceleratorAccountDesk`; fail immediately on native command errors.
-- [ ] Publish with the concrete command below; preserve the entire folder, including native SQLite and framework files.
+- [x] Add PowerShell scripts resolving the project-local SDK first. `scripts/test.ps1` runs core behavior tests. `scripts/build.ps1` builds and publishes `win-x64` self-contained output to `dist/加速账户助手-0.2.0`; fail immediately on native command errors.
+- [x] Publish with the concrete command below; preserve the entire folder, including native SQLite and framework files.
 
 ```powershell
-& .\.tools\dotnet\dotnet.exe publish .\src\AcceleratorDesk.App\AcceleratorDesk.App.csproj -c Release -r win-x64 --self-contained true -o .\dist\AcceleratorAccountDesk
+& .\.tools\dotnet\dotnet.exe publish .\src\AcceleratorDesk.App\AcceleratorDesk.App.csproj -c Release -r win-x64 --self-contained true -o .\dist\加速账户助手-0.2.0
 ```
 
-- [ ] Provide a Chinese-named launcher exe or folder alongside a brief Chinese usage guide. README documents default data location, optional `--data-dir`, user-operated official flows, expiry/cancellation semantics, build/test commands and backup via copying the data directory while the app is closed.
-- [ ] Run the behavior tests, Release build, and published-exe smoke check. Verify UI persistence with a separate test data directory; reopen the delivered exe on the real empty user data directory for handoff.
+- [x] Provide a Chinese-named launcher exe or folder alongside a brief Chinese usage guide. README documents default data location, optional `--data-dir`, user-operated official flows, expiry/cancellation semantics, build/test commands and backup via copying the data directory while the app is closed.
+- [x] Run the behavior tests, Release build, and published-exe smoke check. Verify UI persistence with a separate test data directory; reopen the delivered exe on the real empty user data directory for handoff.
 - [ ] Review the final change for state integrity, false success, sensitive credential storage and any invented eligibility/date claim. Resolve material findings, record output sizes/checksum, and report the clickable exe path with accurate test boundaries.

@@ -21,8 +21,7 @@ public sealed class PhoneDialog : RecordDialog
         _until = Input(Display.DateInput(_record.RestrictionUntil));
         _notice = Input(_record.OfficialRestrictionNote, true);
         var body = new StackPanel();
-        body.Children.Add(Field("手机号 *", _number, "填写本人持有的号码，可包含国家区号。"));
-        body.Children.Add(Field("号码备注", _label, "例如：常用号码、备用号码。"));
+        body.Children.Add(FormLayout.Pair(Field("手机号 *", _number, "填写本人号码，可包含国家区号。"), Field("号码备注", _label, "例如：常用号码、备用号码。")));
         body.Children.Add(Field("官方提示限制至", _until, "格式：yyyy-MM-dd HH:mm；期限未知时留空。"));
         body.Children.Add(Field("官方限制说明", _notice));
         FormHost.Content = Scroll(body);

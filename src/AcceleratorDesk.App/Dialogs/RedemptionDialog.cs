@@ -25,12 +25,9 @@ public sealed class RedemptionDialog : RecordDialog
         _expiry = Input(Display.DateInput(_record.ExpiresAt));
         _note = Input(_record.ResultNote, true);
         var body = new StackPanel();
-        body.Children.Add(Field("兑换账号", _account));
-        body.Children.Add(Field("兑换码 / 口令 *", _code));
-        body.Children.Add(Field("官方返回结果", _outcome, "尚未确认时选择「待确认」。"));
-        body.Children.Add(Field("兑换时间 *", _redeemedAt, "格式：yyyy-MM-dd HH:mm。"));
-        body.Children.Add(Field("实际到账时长", _duration, "例如：7 天；不知道时留空。"));
-        body.Children.Add(Field("实际到期时间", _expiry, "成功且填写时间时，更新该账号的到期记录；不会把时间往前调。"));
+        body.Children.Add(FormLayout.Pair(Field("兑换账号", _account), Field("官方返回结果", _outcome, "尚未确认时选择「待确认」。")));
+        body.Children.Add(FormLayout.Pair(Field("兑换码 / 口令 *", _code), Field("兑换时间 *", _redeemedAt, "格式：yyyy-MM-dd HH:mm。")));
+        body.Children.Add(FormLayout.Pair(Field("实际到账时长", _duration, "例如：7 天；不知道时留空。"), Field("实际到期时间", _expiry, "首次记录成功时更新；之后在账号页纠正。")));
         body.Children.Add(Field("结果说明", _note));
         FormHost.Content = Scroll(body);
     }

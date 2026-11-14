@@ -5,12 +5,14 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>AcceleratorAccountDesk</AssemblyName>
     <RootNamespace>AcceleratorDesk.App</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Product>加速账户助手</Product>
     <Description>本地账号与加速时长记录工具</Description>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\AcceleratorDesk.Core\AcceleratorDesk.Core.csproj" />
+    <Resource Include="Assets\game-atmosphere.jpg" />
   </ItemGroup>
 </Project>

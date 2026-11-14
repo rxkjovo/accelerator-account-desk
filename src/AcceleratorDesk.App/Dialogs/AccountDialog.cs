@@ -29,11 +29,9 @@ public sealed class AccountDialog : RecordDialog
         _waitUntil = Input(Display.DateInput(_record.OfficialWaitUntil));
         _notice = Input(_record.OfficialNotice, true);
         var basics = new StackPanel();
-        basics.Children.Add(Field("登录渠道", _provider));
-        basics.Children.Add(Field("QQ 号 / 微博账号标识 *", _identifier));
-        basics.Children.Add(Field("账号备注", _nickname));
+        basics.Children.Add(FormLayout.Pair(Field("登录渠道", _provider), Field("当前进度", _stage)));
+        basics.Children.Add(FormLayout.Pair(Field("QQ 号 / 微博账号标识 *", _identifier), Field("账号备注", _nickname)));
         basics.Children.Add(Field("关联手机号", _phone, "可先在「手机号」页面添加号码。"));
-        basics.Children.Add(Field("当前进度", _stage));
         basics.Children.Add(Field("补充说明", _notes));
         var membership = new StackPanel();
         membership.Children.Add(Field("实际到期时间", _expiry, "格式：yyyy-MM-dd HH:mm；不知道时留空。"));
@@ -41,9 +39,8 @@ public sealed class AccountDialog : RecordDialog
         membership.Children.Add(new TextBlock { Text = $"本地建档时间：{Display.Date(_record.CreatedAt)}", Style = (System.Windows.Style)FindResource("MutedText"), Margin = new System.Windows.Thickness(0, 20, 0, 0) });
         var cancellation = new StackPanel();
         cancellation.Children.Add(Field("平台账号注销状态", _cancellation));
-        cancellation.Children.Add(Field("注销申请时间", _requested, "可选，格式：yyyy-MM-dd HH:mm。"));
+        cancellation.Children.Add(FormLayout.Pair(Field("注销申请时间", _requested, "格式：yyyy-MM-dd HH:mm。"), Field("官方确认注销完成时间", _completed, "选择「已完成」时填写。")));
         cancellation.Children.Add(Field("官方提示等待至", _waitUntil, "没有明确期限时留空，不据此推定手机号可再次注册。"));
-        cancellation.Children.Add(Field("官方确认注销完成时间", _completed, "选择「已完成」时，需要填写官方确认的完成时间。"));
         cancellation.Children.Add(Field("官方提示 / 结果来源", _notice));
         var tabs = new TabControl();
         tabs.Items.Add(new TabItem { Header = "基本资料", Content = Scroll(basics) });

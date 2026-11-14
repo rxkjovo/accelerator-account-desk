@@ -1,0 +1,12 @@
+.tools/
+.superpowers/
+**/bin/
+**/obj/
+artifacts/
+dist/
+*.user
+*.db
+*.db-shm
+*.db-wal
+*.zip
+

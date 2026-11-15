@@ -12,7 +12,28 @@ public partial class MainWindow
     {
         if ((AccountsGrid.SelectedItem as AccountRow)?.Record.Provider == AccountProvider.Weibo)
             OpenClientWithHint("在迅雷登录窗口选择微博，再通过官方验证码或扫码入口完成登录 / 注册。");
-        else { OfficialLauncher.OpenQqRegistration(); SetStatus("已打开 QQ 官方注册页面，请在官方页面完成输入和验证。"); }
+        else ShowQqRegistration();
+    });
+    private void RegisterQq_Click(object sender, RoutedEventArgs e) => RunUi(ShowQqRegistration);
+    private void ShowQqRegistration()
+    {
+        Directory.CreateDirectory(_dataDirectory);
+        using var registrationLease = OpenRegistrationLease();
+        var dialog = new Dialogs.QqRegistrationWindow(_repository, _dataDirectory) { Owner = this };
+        dialog.ShowDialog();
+        Reload(dialog.SavedAccountId);
+        SetStatus(dialog.SavedAccountId is not null ? "QQ 账号、关联手机号和加密密码已保存。" : "注册向导已关闭；待确认资料会保存在本机加密草稿中。");
+    }
+    private FileStream OpenRegistrationLease()
+    {
+        try { return new FileStream(Path.Combine(_dataDirectory, "qq-registration.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); }
+        catch (IOException) { throw new InvalidOperationException("当前数据目录已有一个注册向导，请先完成或关闭它，再开始新的注册。"); }
+    }
+    private void AccountPassword_Click(object sender, RoutedEventArgs e) => RunUi(() =>
+    {
+        if (AccountsGrid.SelectedItem is not AccountRow row) return;
+        var dialog = new Dialogs.CredentialDialog(row.Record, new AccountCredentialService(_repository)) { Owner = this };
+        if (dialog.ShowDialog() == true) SetStatus("账号密码已加密保存。");
     });
     private void OpenClient_Click(object sender, RoutedEventArgs e) => RunUi(() => OpenClientWithHint("在迅雷客户端完成 QQ / 微博授权和口令兑换，随后返回记录实际结果。"));
     private void OpenClientWithHint(string hint)

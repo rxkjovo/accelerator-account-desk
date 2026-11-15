@@ -107,8 +107,8 @@ public partial class MainWindow : Window
         DetailExpiry.Text = "到期时间：" + (row?.Expiry ?? "未记录");
         DetailCancellation.Text = "注销状态：" + (row?.Cancellation ?? "未记录");
         DetailWait.Text = "官方等待期限：" + (row?.Record.OfficialWaitUntil is DateTimeOffset date ? Display.Date(date) : "未知");
-        ProviderEntryButton.Content = row?.Record.Provider == AccountProvider.Weibo ? "前往微博登录 / 注册" : "打开 QQ 注册";
-        EditAccountButton.IsEnabled = CopyAccountButton.IsEnabled = NewRedemptionButton.IsEnabled = row is not null;
+        ProviderEntryButton.Content = row?.Record.Provider == AccountProvider.Weibo ? "前往微博登录 / 注册" : "注册 QQ";
+        EditAccountButton.IsEnabled = CopyAccountButton.IsEnabled = AccountPasswordButton.IsEnabled = NewRedemptionButton.IsEnabled = row is not null;
     }
 
     private void Navigate(string page)

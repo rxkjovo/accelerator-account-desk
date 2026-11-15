@@ -59,9 +59,18 @@ internal static class Program
             var redemptionEditor = new RedemptionDialog(null, accounts, accounts[0].Id, _ => { });
             Render(redemptionEditor, Path.Combine(output, "redemption-editor.png"), 720, 680);
             VerifyInputs(redemptionEditor);
+            var registration = new QqRegistrationWindow(repository, data);
+            Render(registration, Path.Combine(output, "qq-registration.png"), 1240, 820);
+            VerifyInputs(registration);
+            registration.Close();
+            var password = new CredentialDialog(accounts[0], new AccountCredentialService(repository));
+            Render(password, Path.Combine(output, "account-password.png"), 650, 590);
+            VerifyInputs(password);
+            password.Close();
             redemptionEditor.Close();
             phoneEditor.Close();
             FormBehaviorChecks.Run(Path.Combine(data, "form-checks.db"));
+            RegistrationFormChecks.Run(Path.Combine(data, "registration-form-checks"));
             editor.Close();
             sample.Close();
             empty.Close();
@@ -75,10 +84,10 @@ internal static class Program
 
     private static void VerifyPrimaryAction(MainWindow window)
     {
-        if (window.FindName("NewAccountButton") is not Button action) throw new Exception("Primary action missing.");
+        if (window.FindName("QqRegisterButton") is not Button action) throw new Exception("Primary action missing.");
         var background = BrushColor(action.Background);
         CheckContrast(BrushColor(action.Foreground), background, "primary button");
-        var labels = Descendants(action).OfType<TextBlock>().Where(x => x.Text.Contains("新增账号")).ToList();
+        var labels = Descendants(action).OfType<TextBlock>().Where(x => x.Text.Contains("注册 QQ")).ToList();
         if (labels.Count == 0) throw new Exception("Primary action text not rendered.");
         foreach (var label in labels) CheckContrast(BrushColor(label.Foreground), background, "rendered primary text");
     }
@@ -89,6 +98,11 @@ internal static class Program
         {
             if (input.FontSize < 13) throw new Exception("Input text is smaller than 13px.");
             CheckContrast(BrushColor(input.Foreground), BrushColor(input.Background), "input text");
+        }
+        foreach (var input in Descendants((DependencyObject)editor.Content).OfType<PasswordBox>())
+        {
+            if (input.FontSize < 13) throw new Exception("Password text is smaller than 13px.");
+            CheckContrast(BrushColor(input.Foreground), BrushColor(input.Background), "password text");
         }
     }
 

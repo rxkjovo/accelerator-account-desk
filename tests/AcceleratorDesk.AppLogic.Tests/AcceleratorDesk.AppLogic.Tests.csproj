@@ -4,5 +4,6 @@
     <Compile Include="..\..\src\AcceleratorDesk.App\Services\Display.cs" Link="Display.cs" />
     <Compile Include="..\..\src\AcceleratorDesk.App\Services\CsvExporter.cs" Link="CsvExporter.cs" />
     <Compile Include="..\..\src\AcceleratorDesk.App\Services\SettingsStore.cs" Link="SettingsStore.cs" />
+    <Compile Include="..\..\src\AcceleratorDesk.App\Services\QqRegistrationPolicy.cs" Link="QqRegistrationPolicy.cs" />
   </ItemGroup>
 </Project>

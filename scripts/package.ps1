@@ -9,11 +9,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $publishDirectory 'AcceleratorDesk.U
 if ([Reflection.AssemblyName]::GetAssemblyName((Join-Path $publishDirectory 'AcceleratorAccountDesk.dll')).Version.ToString(3) -ne $version) { throw 'Published application version mismatch.' }
 Copy-Item -LiteralPath (Join-Path $repoDirectory 'docs\使用说明.txt') -Destination (Join-Path $publishDirectory '先读我-使用说明.txt') -Force
 Copy-Item -LiteralPath (Join-Path $repoDirectory 'LICENSE') -Destination (Join-Path $publishDirectory 'LICENSE') -Force
-$privateFiles = @(Get-ChildItem -LiteralPath $publishDirectory -Recurse -Force | Where-Object {
-    $_.Name -match '^(settings\.json|redemption-codes\.json|qq-registration-draft\.bin|qq-browser|updates|backups?|\.git)$' -or
-    $_.Name -match '\.(db|db-wal|db-shm|lock)$'
-})
-if ($privateFiles.Count -gt 0) { throw 'Package contains local user data or a source checkout. Packaging stopped.' }
+& (Join-Path $PSScriptRoot 'assert-clean-publish.ps1') -PublishDirectory $publishDirectory
 $channel = Get-Content -LiteralPath (Join-Path $publishDirectory 'update-channel.json') -Raw | ConvertFrom-Json
 if ($channel.Repository -notmatch '^[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$') { throw 'Invalid update repository.' }
 New-Item -ItemType Directory -Path $releaseDirectory -Force | Out-Null
@@ -46,7 +42,8 @@ $notes = @"
 - 修复个人兑换码文件无法读取时整张列表空白的问题；内置的 7 个码继续显示和复制，原文件保留。
 - 保留 QQ 注册结果保存、密码查看及兑换码复制功能。
 
-下载下面的 $archiveName，全部解压后双击「加速账户助手.exe」。请保留整个文件夹。
+推荐下载 AcceleratorAccountDesk-$version-Setup-win-x64.exe，双击进入中文安装向导，可自定义目录并创建快捷方式。
+免安装版为 $archiveName，全部解压后双击「加速账户助手.exe」，请保留整个文件夹。
 软件更新入口：左下角「检查更新」，或「设置与说明 → 软件更新」。
 QQ 官方内嵌页需要 Microsoft Edge WebView2 Runtime；验证码、授权及额外安全验证由本人完成。
 

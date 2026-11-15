@@ -4,7 +4,9 @@ Windows 本地桌面工具，用于记录本人 QQ / 微博账号、关联手机
 
 [下载最新版](https://github.com/rxkjovo/accelerator-account-desk/releases/latest) · [反馈问题](https://github.com/rxkjovo/accelerator-account-desk/issues) · [参与修改](CONTRIBUTING.md)
 
-下载 Release 中的 `AcceleratorAccountDesk-版本-win-x64.zip`，全部解压后双击「加速账户助手.exe」。软件适用于 Windows 10/11 x64，已包含 .NET 运行时；QQ 内嵌页面另需 Microsoft Edge WebView2 Runtime。朋友首次运行会建立自己的本机记录，不包含发布者的账号和密码。
+推荐下载 Release 中的 `AcceleratorAccountDesk-版本-Setup-win-x64.exe`，双击进入中文安装向导，点击“浏览”自定义安装目录。安装后提供桌面和开始菜单快捷方式，可在 Windows 设置中卸载。账号数据独立保存，卸载程序保留个人记录。
+
+也可以下载 `AcceleratorAccountDesk-版本-win-x64.zip` 使用免安装版：全部解压后双击「加速账户助手.exe」。软件适用于 Windows 10/11 x64，已包含 .NET 运行时；QQ 内嵌页面另需 Microsoft Edge WebView2 Runtime。朋友首次运行会建立自己的本机记录，不包含发布者的账号和密码。
 
 ## 在线更新与分享
 
@@ -12,7 +14,7 @@ Windows 本地桌面工具，用于记录本人 QQ / 微博账号、关联手机
 
 检查和下载需要能访问 GitHub。连接失败、取消或校验不通过时可继续使用当前版本。更新包只有完整性校验，未做 Windows 发布者代码签名。可以手动下载新包并解压到独立目录。
 
-把 Release ZIP 或下载页分享给朋友即可；不要打包自己的 `%LOCALAPPDATA%\AcceleratorAccountDesk`。源码采用 MIT 许可，欢迎 Fork 和提交 PR。
+把 Release 安装 EXE、免安装 ZIP 或下载页分享给朋友即可；不要打包自己的 `%LOCALAPPDATA%\AcceleratorAccountDesk`。源码采用 MIT 许可，欢迎 Fork 和提交 PR。
 
 ## 打开软件
 
@@ -79,8 +81,11 @@ CSV 导出保留界面显示的手机号脱敏值；它用于查看，完整备�
 .\scripts\test.ps1
 .\scripts\build.ps1
 .\scripts\package.ps1 -SkipBuild
+.\scripts\build-installer.ps1 -SkipBuild
 ```
 
 测试包含实际 SQLite 持久化、版本升级、未知日期、到期边界、事务回滚、并发写入、Windows 密码加密与草稿恢复，以及真实 WebView2 模拟页面的填写/验证码/提交桥接和 WPF 表单保存。
+
+构建安装 EXE 另需 [Inno Setup](https://jrsoftware.org/isdl.php)，脚本可自动发现常见安装位置，或传入 `-CompilerPath "路径\ISCC.exe"`。中文翻译来自 Inno Setup 官方源码的用户贡献语言文件，保留原文件头。
 
 浏览器测试拦截所有请求并返回明确标记的本地模拟页面，不会向 QQ 发送短信或注册。已只读核对本人实际操作后的官方成功页；修正版的识别、账号与密码保存使用隔离数据库和本地页面验证，未另行执行真实短信、注册或安全验证。

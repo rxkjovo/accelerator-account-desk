@@ -40,6 +40,7 @@ public sealed class QqRegistrationSession
     public void MarkSubmitted()
     {
         var draft = Draft ?? throw new InvalidOperationException("请先选择手机号并开始注册。");
+        ValidateDraftPhone();
         var updated = draft with { SubmissionAttempted = true };
         _drafts.Save(updated); Draft = updated;
     }
@@ -63,19 +64,40 @@ public sealed class QqRegistrationSession
         if (Draft is not { SubmissionAttempted: true } draft) return false;
         var qq = QqRegistrationPolicy.ReadSuccessfulQq(source, visibleText, draft.PhoneNumber);
         if (qq is null) return false;
-        SaveConfirmed(qq); return true;
+        SaveConfirmed(qq, draft.Password); return true;
     }
 
-    public Guid ConfirmManual(string qqNumber, bool userConfirmed)
+    public Guid ConfirmManual(string qqNumber, bool userConfirmed) => ConfirmManual(qqNumber, userConfirmed, false, null);
+
+    public Guid ConfirmManual(string qqNumber, bool userConfirmed, bool usedGeneratedPassword, string? actualPassword)
     {
         if (!userConfirmed) throw new ArgumentException("请先确认已在 QQ 官方页面看到注册成功及所填 QQ 号。");
-        return SaveConfirmed(qqNumber.Trim());
+        var draft = Draft ?? throw new InvalidOperationException("请先选择手机号并开始注册。");
+        if (usedGeneratedPassword && !string.IsNullOrEmpty(actualPassword)) throw new ArgumentException("请只选择使用软件生成的密码，或输入实际密码，避免保存错误密码。");
+        var password = usedGeneratedPassword ? draft.Password : actualPassword;
+        if (string.IsNullOrEmpty(password)) throw new ArgumentException("请确认本次使用软件生成的密码，或输入在官方页面实际设置的密码；仅确认注册成功不能推断密码。");
+        return SaveConfirmed(qqNumber.Trim(), password);
     }
 
-    private Guid SaveConfirmed(string qqNumber)
+    public void ValidateDraftPhone()
+    {
+        var draft = Draft ?? throw new InvalidOperationException("请先选择手机号并开始注册。");
+        var current = _repository.GetPhones().FirstOrDefault(x => x.Id == draft.PhoneId);
+        string? normalized = null;
+        if (current is not null)
+        {
+            try { normalized = QqRegistrationPolicy.NormalizePhone(current.Number); }
+            catch (ArgumentException) { }
+        }
+        if (normalized != draft.PhoneNumber)
+            throw new InvalidOperationException("草稿关联的手机号记录已更改或不存在。原号码和密码仍保留；请先恢复原手机号记录，或核对结果后明确放弃草稿重新选择。");
+    }
+
+    private Guid SaveConfirmed(string qqNumber, string password)
     {
         if (SavedAccountId is Guid saved) return saved;
         var draft = Draft ?? throw new InvalidOperationException("请先选择手机号并开始注册，以便关联本次注册资料。");
+        ValidateDraftPhone();
         if (!Regex.IsMatch(qqNumber, @"^[1-9][0-9]{4,11}$") || qqNumber == draft.PhoneNumber)
             throw new ArgumentException("请填写官方成功页面显示的 QQ 号，不能填写手机号。");
         var existing = _repository.GetAccounts().FirstOrDefault(x => x.Id == draft.AccountId);
@@ -86,7 +108,7 @@ public sealed class QqRegistrationSession
         };
         if (existing is not null && (existing.Provider != AccountProvider.QQ || existing.Identifier != qqNumber))
             throw new InvalidOperationException("草稿账号与已保存记录不一致，请核对已有账号。");
-        _credentials.Save(account, draft.Password);
+        _credentials.SaveForRegistration(account, password, draft.PhoneId, draft.PhoneNumber);
         SavedAccountId = account.Id;
         try { _drafts.Clear(); }
         catch (InvalidOperationException ex) { CleanupWarning = ex.Message; }

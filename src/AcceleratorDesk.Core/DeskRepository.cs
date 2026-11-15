@@ -134,9 +134,17 @@ public sealed class DeskRepository
     /// <summary>Atomically saves an account and an opaque, already protected credential. Never accepts plaintext.</summary>
     public void SaveAccount(AccountRecord account, byte[] protectedPassword)
     {
-        if (protectedPassword is null || protectedPassword.Length is < 1 or > MaximumProtectedPasswordBytes)
-            throw new ArgumentException("加密密码数据不能为空且不能超过 64 KiB，请重新输入并保存密码。", nameof(protectedPassword));
+        ValidateProtectedPassword(protectedPassword);
         SaveAccountInternal(account, protectedPassword);
+    }
+
+    /// <summary>Checks the immutable registration phone in the same write transaction as the account and secret.</summary>
+    public void SaveAccount(AccountRecord account, byte[] protectedPassword, Guid expectedPhoneId, string expectedPhoneNumber)
+    {
+        ValidateProtectedPassword(protectedPassword); RequireId(expectedPhoneId, "注册手机号");
+        var normalized = NormalizeRegistrationPhone(expectedPhoneNumber);
+        if (normalized is null) throw new ArgumentException("注册草稿的手机号格式无效，请核对原草稿。", nameof(expectedPhoneNumber));
+        SaveAccountInternal(account, protectedPassword, expectedPhoneId, normalized);
     }
 
     public byte[]? GetProtectedPassword(Guid accountId)
@@ -150,7 +158,7 @@ public sealed class DeskRepository
         });
     }
 
-    private void SaveAccountInternal(AccountRecord account, byte[]? protectedPassword)
+    private void SaveAccountInternal(AccountRecord account, byte[]? protectedPassword, Guid? expectedPhoneId = null, string? expectedPhoneNumber = null)
     {
         if (account is null) throw new ArgumentException("请提供要保存的账号记录。", nameof(account));
         RequireId(account.Id, "账号");
@@ -168,6 +176,7 @@ public sealed class DeskRepository
         WithConnection(connection =>
         {
             using var transaction = connection.BeginTransaction();
+            CheckRegistrationPhone(connection, transaction, account, expectedPhoneId, expectedPhoneNumber);
             if (account.PhoneId is { } phoneId && !Exists(connection, transaction, "phones", phoneId))
                 throw new ArgumentException("关联的手机号记录不存在，请重新选择手机号。", nameof(account));
             using (var duplicate = Command(connection, transaction, "SELECT 1 FROM accounts WHERE provider=$provider AND identifier=$identifier COLLATE NOCASE AND id<>$id"))
@@ -199,8 +208,31 @@ public sealed class DeskRepository
                     """);
                 Add(secret, "$id", account.Id); Add(secret, "$password", protectedPassword); secret.ExecuteNonQuery();
             }
+            CheckRegistrationPhone(connection, transaction, account, expectedPhoneId, expectedPhoneNumber);
             transaction.Commit(); return 0;
         });
+    }
+
+    private static void ValidateProtectedPassword(byte[] protectedPassword)
+    {
+        if (protectedPassword is null || protectedPassword.Length is < 1 or > MaximumProtectedPasswordBytes)
+            throw new ArgumentException("加密密码数据不能为空且不能超过 64 KiB，请重新输入并保存密码。", nameof(protectedPassword));
+    }
+
+    private static void CheckRegistrationPhone(SqliteConnection connection, SqliteTransaction transaction, AccountRecord account, Guid? expectedId, string? expectedNumber)
+    {
+        if (expectedId is null) return;
+        using var lookup = Command(connection, transaction, "SELECT number FROM phones WHERE id=$id"); Add(lookup, "$id", expectedId.Value);
+        var current = lookup.ExecuteScalar() as string;
+        if (account.PhoneId != expectedId || current is null || NormalizeRegistrationPhone(current) != expectedNumber)
+            throw new InvalidOperationException("注册草稿关联的手机号记录已更改或不存在，本次账号和密码未保存。草稿仍保留；请恢复原手机号后重试，或核对后明确放弃草稿重新选择。");
+    }
+
+    private static string? NormalizeRegistrationPhone(string? number)
+    {
+        var compact = Regex.Replace(number ?? "", @"[\s()\-]", "");
+        if (compact.StartsWith("+86", StringComparison.Ordinal)) compact = compact[3..];
+        return Regex.IsMatch(compact, @"^1[3-9][0-9]{9}$", RegexOptions.CultureInvariant) ? compact : null;
     }
 
     public void SaveRedemption(RedemptionRecord redemption)

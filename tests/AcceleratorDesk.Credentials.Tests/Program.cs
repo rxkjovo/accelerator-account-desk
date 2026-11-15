@@ -173,7 +173,7 @@ var cases = new (string Name, Action Test)[]
     }))
 };
 
-var allCases = cases.Concat(DraftChecks.Cases).ToArray();
+var allCases = cases.Concat(DraftChecks.Cases).Concat(RegistrationPhoneChecks.Cases).ToArray();
 var failures = 0;
 foreach (var test in allCases)
 {

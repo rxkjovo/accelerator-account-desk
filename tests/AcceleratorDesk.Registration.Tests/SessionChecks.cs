@@ -33,6 +33,46 @@ internal static class SessionChecks
             var other = new PhoneRecord { Number = "13900139000" }; repository.SavePhone(other);
             Reject(() => session.Prepare(other)); Equal(phone.Id, session.Draft!.PhoneId);
         });
+        Check("restored draft rejects submission after its phone record number changes", (repository, directory, phone) =>
+        {
+            var draft = new QqRegistrationSession(repository, directory).Prepare(phone);
+            repository.SavePhone(phone with { Number = "13900139000" });
+            var restored = new QqRegistrationSession(repository, directory); Reject(restored.MarkSubmitted);
+            Equal(draft, new QqRegistrationDraftStore(directory).Load()); Equal(0, repository.GetAccounts().Count);
+        });
+        Check("restored manual save rejects changed phone and keeps encrypted draft", (repository, directory, phone) =>
+        {
+            var draft = new QqRegistrationSession(repository, directory).Prepare(phone);
+            repository.SavePhone(phone with { Number = "13900139000" }); var restored = new QqRegistrationSession(repository, directory);
+            Reject(() => Confirm(restored, "9081762354", true, null));
+            Equal(draft, new QqRegistrationDraftStore(directory).Load()); Equal(0, repository.GetAccounts().Count);
+        });
+        Check("restored automatic save rejects changed phone and keeps encrypted draft", (repository, directory, phone) =>
+        {
+            var session = new QqRegistrationSession(repository, directory); session.Prepare(phone); session.MarkSubmitted(); var draft = session.Draft;
+            repository.SavePhone(phone with { Number = "13900139000" }); var restored = new QqRegistrationSession(repository, directory);
+            Reject(() => restored.TrySaveOfficialResult(QqRegistrationPolicy.RegistrationUrl, "注册成功\nQQ号码：9081762354"));
+            Equal(draft, new QqRegistrationDraftStore(directory).Load()); Equal(0, repository.GetAccounts().Count);
+        });
+        Check("manual success confirmation alone cannot assume generated password", (repository, directory, phone) =>
+        {
+            var session = new QqRegistrationSession(repository, directory); var draft = session.Prepare(phone);
+            Reject(() => session.ConfirmManual("9081762354", true));
+            Equal(0, repository.GetAccounts().Count); Equal(draft, new QqRegistrationDraftStore(directory).Load());
+        });
+        Check("manual fallback saves deliberately entered differing password exactly", (repository, directory, phone) =>
+        {
+            var session = new QqRegistrationSession(repository, directory); var draft = session.Prepare(phone); const string actual = "  实际手动密码 😀  ";
+            Confirm(session, "9081762354", false, actual);
+            Equal(actual, new AccountCredentialService(repository).ReadPassword(draft.AccountId)); Equal<QqRegistrationDraft?>(null, new QqRegistrationDraftStore(directory).Load());
+        });
+        Check("manual empty password rejects and failed actual password save retains original draft", (repository, directory, phone) =>
+        {
+            var session = new QqRegistrationSession(repository, directory); var draft = session.Prepare(phone);
+            Reject(() => Confirm(session, "9081762354", false, "")); Equal(draft, new QqRegistrationDraftStore(directory).Load());
+            repository.SaveAccount(new AccountRecord { Identifier = "9081762354" }); Reject(() => Confirm(session, "9081762354", false, "actual-password"));
+            Equal(draft, new QqRegistrationDraftStore(directory).Load()); Equal<byte[]?>(null, repository.GetProtectedPassword(draft.AccountId));
+        });
         Check("page success text before explicit submission never creates an account", (repository, directory, phone) =>
         {
             var session = new QqRegistrationSession(repository, directory); session.Prepare(phone);
@@ -59,13 +99,13 @@ internal static class SessionChecks
         {
             var session = new QqRegistrationSession(repository, directory); session.Prepare(phone);
             Reject(() => session.ConfirmManual("9081762354", false)); Reject(() => session.ConfirmManual("not-a-qq", true)); Reject(() => session.ConfirmManual("13800138000", true));
-            Equal(0, repository.GetAccounts().Count); session.ConfirmManual("9081762354", true); Equal(1, repository.GetAccounts().Count);
+            Equal(0, repository.GetAccounts().Count); Confirm(session, "9081762354", true, null); Equal(1, repository.GetAccounts().Count);
         });
         Check("duplicate QQ save failure retains draft and does not overwrite another account password", (repository, directory, phone) =>
         {
             var existing = new AccountRecord { Identifier = "9081762354" }; var credentials = new AccountCredentialService(repository); credentials.Save(existing, "ExistingFixture2");
             var session = new QqRegistrationSession(repository, directory); session.Prepare(phone);
-            Reject(() => session.ConfirmManual("9081762354", true));
+            Reject(() => Confirm(session, "9081762354", true, null));
             Equal("ExistingFixture2", credentials.ReadPassword(existing.Id)); Equal(1, repository.GetAccounts().Count); Equal(true, new QqRegistrationDraftStore(directory).Load() is not null);
         });
         Check("known unsent rejection unlocks code correction without losing generated password", (repository, directory, phone) =>
@@ -86,5 +126,7 @@ internal static class SessionChecks
     }
 
     private static void Equal<T>(T expected, T actual) { if (!EqualityComparer<T>.Default.Equals(expected, actual)) throw new Exception($"Expected {expected}; got {actual}"); }
+    private static Guid Confirm(QqRegistrationSession session, string qq, bool generated, string? actual)
+        => session.ConfirmManual(qq, true, generated, actual);
     private static void Reject(Action action) { try { action(); } catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return; } throw new Exception("Invalid state was accepted."); }
 }

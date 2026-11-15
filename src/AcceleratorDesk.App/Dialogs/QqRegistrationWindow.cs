@@ -22,6 +22,8 @@ public sealed class QqRegistrationWindow : Window
     private readonly TextBox _code = new() { MaxLength = 6, FontSize = 20 };
     private readonly TextBox _qq = new();
     private readonly CheckBox _confirmed = new() { Content = "我已看到官方注册成功，并核对了 QQ 号" };
+    private readonly CheckBox _usedGeneratedPassword = new() { Content = "本次使用软件生成的密码", IsChecked = false };
+    private readonly PasswordBox _manualPassword = new();
     private readonly TextBox _nickname = new() { IsReadOnly = true };
     private readonly PasswordBox _password = new();
     private readonly TextBox _visiblePassword = new() { IsReadOnly = true, Visibility = Visibility.Collapsed };
@@ -29,7 +31,7 @@ public sealed class QqRegistrationWindow : Window
     private readonly TextBlock _browserNotice = new() { Text = "正在加载 QQ 官方页面…", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(24), Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
     private readonly WebView2 _browser = new() { DefaultBackgroundColor = System.Drawing.Color.White };
     private readonly DispatcherTimer _poll = new() { Interval = TimeSpan.FromSeconds(2) };
-    private readonly Button _start, _submit, _read, _manualSave;
+    private readonly Button _start, _submit, _read, _manualSave, _add;
     private readonly List<Button> _operations = [];
     private bool _busy, _closed, _ready, _polling;
     private DateTimeOffset? _lastSmsRequest;
@@ -66,7 +68,7 @@ public sealed class QqRegistrationWindow : Window
         AutomationProperties.SetName(_phone, "注册手机号");
         var phoneRow = new Grid(); phoneRow.ColumnDefinitions.Add(new ColumnDefinition()); phoneRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         phoneRow.Children.Add(_phone);
-        var add = Operation("添加", () => AddPhone(), primary: false); add.Margin = new Thickness(8, 0, 0, 0); add.Padding = new Thickness(13, 7, 13, 7); Grid.SetColumn(add, 1); phoneRow.Children.Add(add); body.Children.Add(phoneRow);
+        _add = Operation("添加", () => AddPhone(), primary: false); _add.Margin = new Thickness(8, 0, 0, 0); _add.Padding = new Thickness(13, 7, 13, 7); Grid.SetColumn(_add, 1); phoneRow.Children.Add(_add); body.Children.Add(phoneRow);
         _start = Operation("开始注册 / 获取验证码", () => _ = RunAsync(StartAsync)); _start.Margin = new Thickness(0, 12, 0, 0); body.Children.Add(_start);
         body.Children.Add(Muted("自动生成昵称和独立密码。额外安全验证在右侧官方页面完成。", 0, 8, 0, 24));
         body.Children.Add(Label("02  输入短信验证码")); AutomationProperties.SetName(_code, "短信验证码"); body.Children.Add(_code);
@@ -92,6 +94,11 @@ public sealed class QqRegistrationWindow : Window
         manual.Children.Add(Muted("自动读取不成功时，将官方成功页的 QQ 号粘贴到这里。", 0, 10, 0, 10));
         AutomationProperties.SetName(_qq, "注册成功的 QQ 号"); manual.Children.Add(_qq);
         _confirmed.Margin = new Thickness(0, 12, 0, 12); AutomationProperties.SetName(_confirmed, "已核对官方注册成功"); manual.Children.Add(_confirmed);
+        AutomationProperties.SetName(_usedGeneratedPassword, "本次使用软件生成的密码"); manual.Children.Add(_usedGeneratedPassword);
+        manual.Children.Add(Muted("仅确认注册成功不能确定密码。请确认使用了软件生成的密码，或填写在官方页面实际设置的密码。", 0, 7, 0, 10));
+        manual.Children.Add(Label("本次实际使用的密码")); AutomationProperties.SetName(_manualPassword, "本次实际使用的密码"); manual.Children.Add(_manualPassword);
+        _usedGeneratedPassword.Checked += (_, _) => { _manualPassword.Clear(); _manualPassword.IsEnabled = false; };
+        _usedGeneratedPassword.Unchecked += (_, _) => _manualPassword.IsEnabled = true;
         _manualSave = Operation("保存已确认的账号与密码", SaveManual, false); manual.Children.Add(_manualSave);
         body.Children.Add(new Expander { Header = "结果未读取？手动确认", Content = manual });
         columns.Children.Add(new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(0, 0, 10, 0) });
@@ -118,7 +125,7 @@ public sealed class QqRegistrationWindow : Window
             finally { _polling = false; }
         };
         Loaded += async (_, _) => await RunAsync(EnsureBrowserAsync);
-        Closed += (_, _) => { _closed = true; _poll.Stop(); _password.Clear(); _visiblePassword.Clear(); _code.Clear(); _browser.Dispose(); };
+        Closed += (_, _) => { _closed = true; _poll.Stop(); _password.Clear(); _visiblePassword.Clear(); _manualPassword.Clear(); _code.Clear(); _browser.Dispose(); };
     }
 
     private Button Operation(string text, Action action, bool primary = true, bool quiet = false)
@@ -135,12 +142,17 @@ public sealed class QqRegistrationWindow : Window
 
     private void RefreshPhones(Guid? selected = null)
     {
-        _phone.ItemsSource = _repository.GetPhones().Select(x => new Choice<Guid>(x.Id, $"{(string.IsNullOrWhiteSpace(x.Label) ? "本人号码" : x.Label)}  {AccountPresentation.MaskPhone(x.Number)}")).ToList();
-        var id = selected ?? _session.Draft?.PhoneId;
+        var draft = _session.Draft;
+        var choices = _repository.GetPhones().Where(x => x.Id != draft?.PhoneId)
+            .Select(x => new Choice<Guid>(x.Id, $"{(string.IsNullOrWhiteSpace(x.Label) ? "本人号码" : x.Label)}  {AccountPresentation.MaskPhone(x.Number)}")).ToList();
+        if (draft is not null) choices.Insert(0, new Choice<Guid>(draft.PhoneId, $"本次草稿号码  {AccountPresentation.MaskPhone(draft.PhoneNumber)}"));
+        _phone.ItemsSource = choices;
+        var id = draft?.PhoneId ?? selected;
         _phone.SelectedItem = _phone.Items.OfType<Choice<Guid>>().FirstOrDefault(x => x.Value == id) ?? _phone.Items.OfType<Choice<Guid>>().FirstOrDefault();
     }
     private void AddPhone()
     {
+        if (_session.Draft is not null) { SetStatus("当前注册草稿已锁定原号码。请先核对结果或明确放弃草稿，再添加并选择其他号码。"); return; }
         var dialog = new PhoneDialog(null, _repository.SavePhone) { Owner = this };
         if (dialog.ShowDialog() == true) RefreshPhones(_repository.GetPhones().Last().Id);
     }
@@ -150,11 +162,17 @@ public sealed class QqRegistrationWindow : Window
         _password.Password = _session.Draft?.Password ?? "";
         _phone.IsEnabled = _session.Draft is null;
         SetStatus(_session.Draft is null ? "准备就绪。选择手机号后开始注册。" : "已恢复待确认草稿。昵称与密码保持原值，请先核对本次注册结果。");
+        if (_session.Draft is { } draft)
+        {
+            try { _session.ValidateDraftPhone(); }
+            catch (InvalidOperationException error) { SetStatus($"草稿使用号码：{AccountPresentation.MaskPhone(draft.PhoneNumber)}\n" + error.Message); }
+        }
         RefreshButtons();
     }
     private void RefreshButtons()
     {
         foreach (var button in _operations) button.IsEnabled = !_busy;
+        _add.IsEnabled = !_busy && _session.Draft is null && SavedAccountId is null;
         _start.IsEnabled = !_busy && SavedAccountId is null;
         _submit.IsEnabled = !_busy && _session.Draft is not null && SavedAccountId is null;
         _manualSave.IsEnabled = !_busy && _session.Draft is not null && SavedAccountId is null;
@@ -245,6 +263,7 @@ public sealed class QqRegistrationWindow : Window
     private async Task SubmitAsync()
     {
         var draft = _session.Draft ?? throw new InvalidOperationException("请先选择号码并开始注册。");
+        _session.ValidateDraftPhone();
         if (!System.Text.RegularExpressions.Regex.IsMatch(_code.Text.Trim(), @"^[0-9]{6}$")) throw new ArgumentException("请填写短信中的 6 位验证码。");
         if (draft.SubmissionAttempted) throw new InvalidOperationException("本次已提交，请先查看官方结果或手动确认，避免重复提交。");
         await ExecuteAsync(QqPageBridge.Fill(draft.PhoneNumber, draft.Nickname, draft.Password));
@@ -272,7 +291,8 @@ public sealed class QqRegistrationWindow : Window
     }
     private void SaveManual()
     {
-        _session.ConfirmManual(_qq.Text, _confirmed.IsChecked == true); ShowSaved();
+        _session.ConfirmManual(_qq.Text, _confirmed.IsChecked == true, _usedGeneratedPassword.IsChecked == true, _manualPassword.Password);
+        _manualPassword.Clear(); ShowSaved();
     }
     private void ShowSaved()
     {
@@ -287,7 +307,7 @@ public sealed class QqRegistrationWindow : Window
         if (_session.Draft is null || SavedAccountId is not null) return;
         if (MessageBox.Show(this, "放弃草稿会删除本次自动生成的昵称和密码。若 QQ 已注册成功，请先保存账号或复制密码。确定放弃？", "放弃当前注册草稿", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes) return;
         _poll.Stop(); new QqRegistrationDraftStore(_dataDirectory).Clear(); _session = new(_repository, _dataDirectory);
-        _code.Clear(); _qq.Clear(); _visiblePassword.Clear(); _confirmed.IsChecked = false; _lastSmsRequest = null;
+        _code.Clear(); _qq.Clear(); _visiblePassword.Clear(); _manualPassword.Clear(); _usedGeneratedPassword.IsChecked = false; _confirmed.IsChecked = false; _lastSmsRequest = null;
         RefreshPhones(); RefreshDraft(); _ = RunAsync(ReloadBrowserAsync);
     }
 

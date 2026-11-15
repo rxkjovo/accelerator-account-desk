@@ -19,7 +19,8 @@ public sealed class CredentialDialog : RecordDialog
     {
         Width = 650; Height = 590;
         _account = account; _credentials = credentials;
-        _password.Password = credentials.ReadPassword(account.Id) ?? "";
+        try { _password.Password = credentials.ReadPassword(account.Id) ?? ""; }
+        catch (CredentialDecryptionException error) { _notice.Text = error.Message + " 原有密文尚未更改；可输入实际密码后明确保存以替换，或关闭窗口保留原数据。"; }
         var panel = new StackPanel();
         panel.Children.Add(Field("密码", _password, "默认隐藏；可以填写或更新此账号的实际密码。"));
         AutomationProperties.SetName(_visible, "已显示的密码");
@@ -37,6 +38,7 @@ public sealed class CredentialDialog : RecordDialog
         };
         panel.Children.Add(copy);
         _notice.Style = (Style)FindResource("MutedText"); _notice.Margin = new Thickness(0, 14, 0, 0);
+        AutomationProperties.SetName(_notice, "密码恢复提示");
         panel.Children.Add(_notice);
         panel.Children.Add(new TextBlock { Text = "加密绑定当前 Windows 用户。更换用户或重装系统后，备份中的密码可能无法解密。CSV 导出不包含密码。", Style = (Style)FindResource("MutedText"), Margin = new Thickness(0, 22, 0, 0) });
         FormHost.Content = Scroll(panel);

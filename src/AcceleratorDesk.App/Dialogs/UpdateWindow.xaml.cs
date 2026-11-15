@@ -78,7 +78,7 @@ public partial class UpdateWindow : Window
         {
             var progress = new Progress<DownloadProgress>(value =>
             {
-                if (_closing) return;
+                if (_closing || !_working || _operation?.IsCancellationRequested != false) return;
                 DownloadProgressBar.Value = value.Percent;
                 StatusText.Text = value.Verified ? "完整性校验通过，正在准备安装…" : $"已下载 {Megabytes(value.ReceivedBytes)} / {Megabytes(value.TotalBytes)} MB";
             });

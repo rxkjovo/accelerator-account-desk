@@ -10,7 +10,12 @@ public sealed class UpdateClient(HttpClient client)
     public async Task<AvailableUpdate?> CheckAsync(UpdateChannel channel, Version currentVersion, CancellationToken cancellationToken = default)
     {
         channel.Validate();
-        using var response = await GetAsync(new Uri($"https://api.github.com/repos/{channel.Repository}/releases/latest"), cancellationToken);
+        HttpResponseMessage latest;
+        try { latest = await GetAsync(new Uri($"https://api.github.com/repos/{channel.Repository}/releases/latest"), cancellationToken); }
+        catch (HttpRequestException) { return await CheckManifestAsync(channel, currentVersion, cancellationToken); }
+        using var response = latest;
+        if (response.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests || (int)response.StatusCode >= 500)
+            return await CheckManifestAsync(channel, currentVersion, cancellationToken);
         if (response.StatusCode == HttpStatusCode.NotFound) throw new InvalidDataException("这个 GitHub 仓库还没有可用的正式发布，稍后可重新检查。");
         response.EnsureSuccessStatusCode();
         try
@@ -26,7 +31,7 @@ public sealed class UpdateClient(HttpClient client)
             var manifests = assets.Where(x => x.GetProperty("name").GetString() == "update-manifest.json").ToList();
             if (manifests.Count != 1) throw new InvalidDataException("这个发布缺少唯一的更新清单，请联系发布者。");
             var manifestUri = ReleaseAsset(channel, tag, manifests[0].GetProperty("browser_download_url").GetString()!);
-            using var manifestResponse = await GetAsync(manifestUri, cancellationToken); manifestResponse.EnsureSuccessStatusCode();
+            using var manifestResponse = await GetAsync(manifestUri, cancellationToken, channel); manifestResponse.EnsureSuccessStatusCode();
             var manifest = JsonSerializer.Deserialize<UpdateManifest>(await ReadLimitedAsync(manifestResponse.Content, 65536, cancellationToken)) ?? throw new InvalidDataException("更新清单为空。");
             manifest.Validate();
             if (UpdateVersion.Parse(manifest.Version) != version || tag != "v" + manifest.Version) throw new InvalidDataException("发布版本与清单版本不一致。");
@@ -38,6 +43,22 @@ public sealed class UpdateClient(HttpClient client)
         catch (Exception error) when (error is KeyNotFoundException or InvalidOperationException or FormatException or JsonException)
         { throw new InvalidDataException("GitHub 发布资料格式无效，请稍后重试或联系发布者。"); }
     }
+    private async Task<AvailableUpdate?> CheckManifestAsync(UpdateChannel channel, Version currentVersion, CancellationToken cancellationToken)
+    {
+        using var response = await GetAsync(new Uri($"https://github.com/{channel.Repository}/releases/latest/download/update-manifest.json"), cancellationToken, channel);
+        if (response.StatusCode == HttpStatusCode.NotFound) throw new InvalidDataException("这个 GitHub 仓库还没有可用的正式发布，稍后可重新检查。");
+        response.EnsureSuccessStatusCode();
+        try
+        {
+            var manifest = JsonSerializer.Deserialize<UpdateManifest>(await ReadLimitedAsync(response.Content, 65536, cancellationToken)) ?? throw new InvalidDataException("更新清单为空。");
+            manifest.Validate();
+            var current = new Version(currentVersion.Major, currentVersion.Minor, Math.Max(0, currentVersion.Build), Math.Max(0, currentVersion.Revision));
+            if (UpdateVersion.Parse(manifest.Version) <= current) return null;
+            var archive = ReleaseAsset(channel, "v" + manifest.Version, $"https://github.com/{channel.Repository}/releases/download/v{manifest.Version}/{manifest.ArchiveName}");
+            return new(channel, manifest, archive, "从 GitHub 正式发布检测到新版。\n下载后会核对安装包的大小、完整性与程序版本。\n\n完整更新说明：\nhttps://github.com/" + channel.Repository + "/releases/tag/v" + manifest.Version);
+        }
+        catch (JsonException) { throw new InvalidDataException("GitHub 更新清单无法读取，请稍后重试。"); }
+    }
     public async Task<string> DownloadAsync(AvailableUpdate update, string cacheDirectory, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         update.Channel.Validate(); update.Manifest.Validate();
@@ -47,7 +68,7 @@ public sealed class UpdateClient(HttpClient client)
         var path = Path.Combine(cacheDirectory, Guid.NewGuid().ToString("N") + ".zip"); var partial = path + ".partial";
         try
         {
-            using var response = await GetAsync(update.DownloadUri, cancellationToken); response.EnsureSuccessStatusCode();
+            using var response = await GetAsync(update.DownloadUri, cancellationToken, update.Channel); response.EnsureSuccessStatusCode();
             if (response.Content.Headers.ContentLength is { } length && length != update.Manifest.ArchiveSize) throw new InvalidDataException("更新包大小与清单不一致，未安装。");
             await using var source = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
@@ -78,12 +99,14 @@ public sealed class UpdateClient(HttpClient client)
             throw new InvalidDataException("更新文件地址不属于配置的 GitHub 发布。");
         return uri;
     }
-    private async Task<HttpResponseMessage> GetAsync(Uri uri, CancellationToken cancellationToken)
+    private async Task<HttpResponseMessage> GetAsync(Uri uri, CancellationToken cancellationToken, UpdateChannel? channel = null)
     {
         for (var redirects = 0; redirects < 6; redirects++)
         {
             if (!Secure(uri) || uri.Host is not ("api.github.com" or "github.com" or "release-assets.githubusercontent.com" or "objects.githubusercontent.com"))
                 throw new InvalidDataException("更新请求被重定向到不允许的地址。");
+            if (channel is not null && uri.Host == "github.com" && !uri.AbsolutePath.StartsWith($"/{channel.Repository}/releases/", StringComparison.Ordinal))
+                throw new InvalidDataException("更新请求离开了配置的 GitHub 发布仓库。");
             using var request = new HttpRequestMessage(HttpMethod.Get, uri); request.Headers.UserAgent.ParseAdd("AcceleratorAccountDesk-Updater/1.0");
             var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             if ((int)response.StatusCode is 301 or 302 or 303 or 307 or 308)

@@ -99,6 +99,38 @@ await Test("official latest release and manifest produce a newer matching update
     var update = await new UpdateClient(http).CheckAsync(channel, new Version(0, 3, 3, 0));
     Equal("0.3.4", update!.Manifest.Version); Equal(Asset(manifest.ArchiveName), update.DownloadUri); Equal("独立测试更新说明", update.Notes);
 });
+await Test("GitHub anonymous API limits fall back to the official latest manifest", async _ =>
+{
+    var manifest = Manifest([1, 2, 3]);
+    foreach (var status in new[] { HttpStatusCode.Forbidden, HttpStatusCode.TooManyRequests })
+    {
+        var requests = new List<Uri>();
+        using var http = Http(request =>
+        {
+            requests.Add(request.RequestUri!);
+            return request.RequestUri!.Host == "api.github.com" ? new(status) : Json(JsonSerializer.Serialize(manifest));
+        });
+        var update = await new UpdateClient(http).CheckAsync(channel, new Version(0, 3, 3, 0));
+        Equal("0.3.4", update!.Manifest.Version); Equal(Asset(manifest.ArchiveName), update.DownloadUri);
+        Equal("https://github.com/example-owner/accelerator-desk/releases/latest/download/update-manifest.json", requests[1].AbsoluteUri);
+    }
+});
+await Test("fallback manifest retains version integrity and repository redirect guards", async _ =>
+{
+    var valid = Manifest([1, 2, 3]);
+    using var current = Http(request => request.RequestUri!.Host == "api.github.com" ? new(HttpStatusCode.Forbidden) : Json(JsonSerializer.Serialize(valid)));
+    Equal<AvailableUpdate?>(null, await new UpdateClient(current).CheckAsync(channel, new Version(0, 3, 4, 0)));
+    using var invalid = Http(request => request.RequestUri!.Host == "api.github.com" ? new(HttpStatusCode.Forbidden) : Json(JsonSerializer.Serialize(valid with { ProductId = "OtherApp" })));
+    await Reject(async () => await new UpdateClient(invalid).CheckAsync(channel, new Version(0, 3, 3, 0)));
+    var requests = 0;
+    using var foreign = Http(request =>
+    {
+        requests++;
+        if (request.RequestUri!.Host == "api.github.com") return new(HttpStatusCode.Forbidden);
+        var response = new HttpResponseMessage(HttpStatusCode.Redirect); response.Headers.Location = new Uri("https://github.com/other/repo/releases/download/v0.3.4/update-manifest.json"); return response;
+    });
+    await Reject(async () => await new UpdateClient(foreign).CheckAsync(channel, new Version(0, 3, 3, 0))); Equal(2, requests);
+});
 await Test("equal older and prerelease releases never offer an install", async _ =>
 {
     var manifest = Manifest([1, 2, 3]);

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
-    <Version>0.3.3</Version>
+    <Version>0.3.4</Version>
     <ApplicationManifest>..\AcceleratorDesk.App\app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="..\AcceleratorDesk.Update\AcceleratorDesk.Update.csproj" /></ItemGroup>

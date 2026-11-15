@@ -24,8 +24,10 @@ internal static class UpdateFormChecks
             finally { SynchronizationContext.SetSynchronizationContext(previous); }
         }
         var channel = new UpdateChannel("fixture-owner/fixture-repo");
-        var manifest = new UpdateManifest { Version = "0.3.4", ArchiveName = "AcceleratorAccountDesk-0.3.4-win-x64.zip", ArchiveSize = 3, Sha256 = Convert.ToHexString(SHA256.HashData(new byte[] { 1, 2, 3 })) };
-        var release = JsonSerializer.Serialize(new { tag_name = "v0.3.4", draft = false, prerelease = false, body = "本地模拟更新说明\n所有请求均已拦截。", assets = new[] { new { name = "update-manifest.json", browser_download_url = "https://github.com/fixture-owner/fixture-repo/releases/download/v0.3.4/update-manifest.json", size = 1000L }, new { name = manifest.ArchiveName, browser_download_url = "https://github.com/fixture-owner/fixture-repo/releases/download/v0.3.4/" + manifest.ArchiveName, size = 3L } } });
+        var currentVersion = typeof(UpdateWindow).Assembly.GetName().Version!;
+        var nextVersion = $"{currentVersion.Major}.{currentVersion.Minor}.{currentVersion.Build + 1}";
+        var manifest = new UpdateManifest { Version = nextVersion, ArchiveName = $"AcceleratorAccountDesk-{nextVersion}-win-x64.zip", ArchiveSize = 3, Sha256 = Convert.ToHexString(SHA256.HashData(new byte[] { 1, 2, 3 })) };
+        var release = JsonSerializer.Serialize(new { tag_name = "v" + nextVersion, draft = false, prerelease = false, body = "本地模拟更新说明\n所有请求均已拦截。", assets = new[] { new { name = "update-manifest.json", browser_download_url = $"https://github.com/fixture-owner/fixture-repo/releases/download/v{nextVersion}/update-manifest.json", size = 1000L }, new { name = manifest.ArchiveName, browser_download_url = $"https://github.com/fixture-owner/fixture-repo/releases/download/v{nextVersion}/" + manifest.ArchiveName, size = 3L } } });
         HttpResponseMessage Json(string value) => new(HttpStatusCode.OK) { Content = new StringContent(value) };
         using var validHttp = new HttpClient(new Handler((request, _) => Task.FromResult(request.RequestUri!.Host == "api.github.com" ? Json(release) : request.RequestUri.AbsolutePath.EndsWith(".json") ? Json(JsonSerializer.Serialize(manifest)) : new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([9, 8, 7]) })));
         Check("newer release shows notes and enables the explicit install action", directory =>
@@ -34,14 +36,14 @@ internal static class UpdateFormChecks
             try
             {
                 Click(window, "CheckButton"); Pump(() => Button(window, "CheckButton").Content?.ToString() != "取消");
-                Equal(true, Button(window, "InstallButton").IsEnabled); Equal("v0.3.4", Text(window, "LatestVersionText"));
+                Equal(true, Button(window, "InstallButton").IsEnabled); Equal("v" + nextVersion, Text(window, "LatestVersionText"));
                 Equal(true, ((TextBox)window.FindName("NotesBox")).Text.Contains("所有请求均已拦截")); Equal(0, Directory.GetFiles(directory, "*", SearchOption.AllDirectories).Length);
             }
             finally { window.Close(); }
         });
         Check("same version disables installation and reports current", directory =>
         {
-            using var http = new HttpClient(new Handler((_, _) => Task.FromResult(Json(release.Replace("0.3.4", "0.3.3")))));
+            using var http = new HttpClient(new Handler((_, _) => Task.FromResult(Json(release.Replace(nextVersion, currentVersion.ToString(3))))));
             var window = new UpdateWindow(directory, http, channel, false);
             try { Click(window, "CheckButton"); Pump(() => Button(window, "CheckButton").Content?.ToString() != "取消"); Equal(false, Button(window, "InstallButton").IsEnabled); Equal("已是最新版本", Text(window, "HeadingText")); }
             finally { window.Close(); }

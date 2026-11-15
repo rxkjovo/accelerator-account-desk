@@ -1,0 +1,3 @@
+# Preserve the vendored Inno Setup language and license files verbatim.
+installer/Languages/ChineseSimplified.isl -text -whitespace
+installer/INNO-LICENSE.txt -text whitespace=cr-at-eol

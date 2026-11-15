@@ -5,7 +5,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>AcceleratorAccountDesk</AssemblyName>
     <RootNamespace>AcceleratorDesk.App</RootNamespace>
-    <Version>0.3.2</Version>
+    <Version>0.3.3</Version>
     <Product>加速账户助手</Product>
     <Description>本地账号与加速时长记录工具</Description>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -13,7 +13,9 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\AcceleratorDesk.Core\AcceleratorDesk.Core.csproj" />
+    <ProjectReference Include="..\AcceleratorDesk.Update\AcceleratorDesk.Update.csproj" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
     <Resource Include="Assets\game-atmosphere.jpg" />
+    <None Update="update-channel.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

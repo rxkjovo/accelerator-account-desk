@@ -9,4 +9,11 @@ dist/
 *.db-shm
 *.db-wal
 *.zip
+**/accounts.db*
+**/settings.json
+**/redemption-codes.json
+**/qq-registration-draft.bin
+**/qq-browser/
+**/updates/
+*.partial
 

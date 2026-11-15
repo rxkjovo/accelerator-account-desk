@@ -29,6 +29,9 @@ public partial class MainWindow : Window
         _dataDirectory = dataDirectory;
         _settings = settingsStore.Load();
         InitializeComponent();
+        var version = typeof(App).Assembly.GetName().Version!.ToString(3);
+        UpdateNavButton.Content = "v" + version + " · 检查更新";
+        SettingsVersionText.Text = "当前版本 v" + version + " · Windows 64 位";
         Width = Math.Max(MinWidth, Math.Min(1320, SystemParameters.WorkArea.Width - 30));
         Height = Math.Max(MinHeight, Math.Min(820, SystemParameters.WorkArea.Height - 35));
         ProviderFilter.ItemsSource = new[] { new Choice<AccountProvider?>(null, "全部渠道"), new Choice<AccountProvider?>(AccountProvider.QQ, "QQ"), new Choice<AccountProvider?>(AccountProvider.Weibo, "微博") };

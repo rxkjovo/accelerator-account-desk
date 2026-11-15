@@ -71,11 +71,16 @@ internal static class Program
             Render(codes, Path.Combine(output, "redemption-codes.png"), 790, 760);
             VerifyInputs(codes);
             codes.Close();
+            var update = new UpdateWindow(data, checkOnOpen: false);
+            Render(update, Path.Combine(output, "software-update.png"), 720, 650);
+            VerifyInputs(update);
+            update.Close();
             redemptionEditor.Close();
             phoneEditor.Close();
             FormBehaviorChecks.Run(Path.Combine(data, "form-checks.db"));
             RegistrationFormChecks.Run(Path.Combine(data, "registration-form-checks"));
             RedemptionCodeChecks.Run(Path.Combine(data, "redemption-code-checks"));
+            UpdateFormChecks.Run(Path.Combine(data, "update-form-checks"));
             editor.Close();
             sample.Close();
             empty.Close();

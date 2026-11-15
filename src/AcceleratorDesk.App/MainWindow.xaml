@@ -37,7 +37,7 @@
             <StackPanel Grid.Row="2" Margin="14,0,0,0">
               <StackPanel Orientation="Horizontal"><Ellipse Width="5" Height="5" Fill="#8CA567" Margin="0,0,8,0" /><TextBlock Text="本地记录" FontSize="12" Foreground="#BAC3AC" /></StackPanel>
               <TextBlock Text="数据保存在这台电脑" FontSize="12" Foreground="#A5AF98" Margin="13,8,0,0" />
-                <TextBlock Text="v0.3.2" FontFamily="Segoe UI" FontSize="12" Foreground="#A5AF98" Margin="13,8,0,0" />
+              <Button x:Name="UpdateNavButton" Content="检查更新" Click="CheckUpdates_Click" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" FontSize="12" Padding="0,8" Margin="13,0,0,0" AutomationProperties.Name="检查软件更新" />
             </StackPanel>
           </Grid>
         </Border>
@@ -173,6 +173,12 @@
         </Grid>
         <ScrollViewer x:Name="SettingsPage" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
           <StackPanel MaxWidth="900" HorizontalAlignment="Stretch">
+            <Border Style="{StaticResource Card}" Padding="22" Margin="0,0,0,15">
+              <StackPanel><TextBlock Text="软件更新" FontSize="18" FontWeight="SemiBold" /><TextBlock x:Name="SettingsVersionText" Style="{StaticResource MutedText}" Margin="0,9,0,0" />
+                <TextBlock Text="从 GitHub 获取正式版本。下载完成后校验并重新打开，原有账号与密码记录继续保留。" Style="{StaticResource MutedText}" Margin="0,8,0,14" />
+                <Button Content="检查更新" Click="CheckUpdates_Click" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left" />
+              </StackPanel>
+            </Border>
             <Border Style="{StaticResource Card}" Padding="22" Margin="0,0,0,15">
               <StackPanel><TextBlock Text="迅雷游戏加速器" FontSize="18" FontWeight="SemiBold" /><TextBlock Text="选择本机客户端的 exe。之后可从账号操作面板打开。" Style="{StaticResource MutedText}" Margin="0,9,0,14" />
                 <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><TextBox x:Name="ClientPathBox" IsReadOnly="True" AutomationProperties.Name="迅雷客户端路径" /><Button Grid.Column="1" Content="选择客户端…" Click="ChooseClient_Click" Margin="10,0,0,0" /></Grid>

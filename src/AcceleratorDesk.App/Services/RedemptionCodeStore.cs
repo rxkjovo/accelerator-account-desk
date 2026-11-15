@@ -18,6 +18,7 @@ public sealed class RedemptionCodeStore(string dataDirectory)
         new("XL8989", "来自你提供的简书截图；有效性与到账时长未验证。"),
         new("ws1997", "短视频截图称 7 天；有效性与到账时长未验证。")
     ];
+    public static IReadOnlyList<RedemptionCodeEntry> BuiltInCodes { get; } = Array.AsReadOnly(ScreenshotCodes);
 
     public IReadOnlyList<RedemptionCodeEntry> Load()
     {

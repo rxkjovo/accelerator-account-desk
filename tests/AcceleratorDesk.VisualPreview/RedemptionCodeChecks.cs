@@ -53,6 +53,20 @@ internal static class RedemptionCodeChecks
             try { Button(form, "复制兑换码 JSQPHB").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); Equal("JSQPHB", copied); }
             finally { form.Close(); }
         });
+        Check("corrupt custom file still displays and copies every built-in code without overwriting it", directory =>
+        {
+            var path = Path.Combine(directory, "redemption-codes.json"); const string invalid = "[\"invalid old-format entry\"]"; File.WriteAllText(path, invalid);
+            string? copied = null; var form = CreateWindow(CreateStore(directory), value => copied = value);
+            try
+            {
+                foreach (var code in new[] { "JSQPHB", "XL888", "XL7878", "XL1314", "XL6789", "XL8989", "ws1997" })
+                { Button(form, "复制兑换码 " + code).RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); Equal(code, copied); }
+                Elements(form).OfType<TextBox>().Single(x => AutomationProperties.GetName(x) == "新增兑换码").Text = "KeepOriginalFixture";
+                Button(form, "保存兑换码").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+                Equal(invalid, File.ReadAllText(path)); Equal(true, Elements(form).OfType<TextBlock>().Any(x => x.Text.Contains("原文件已保留")));
+            }
+            finally { form.Close(); }
+        });
         Check("native add refreshes a copyable code and persists it for the next window", directory =>
         {
             string? copied = null; var form = CreateWindow(CreateStore(directory), value => copied = value);

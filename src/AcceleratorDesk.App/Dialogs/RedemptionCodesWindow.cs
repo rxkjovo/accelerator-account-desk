@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -49,7 +50,14 @@ public sealed class RedemptionCodesWindow : Window
 
     private void Refresh()
     {
-        var entries = _store.Load(); _rows.Children.Clear();
+        IReadOnlyList<RedemptionCodeEntry> entries;
+        try { entries = _store.Load(); }
+        catch (Exception error) when (error is InvalidDataException or System.IO.IOException or UnauthorizedAccessException)
+        {
+            entries = RedemptionCodeStore.BuiltInCodes;
+            _status.Text = "个人兑换码文件暂时无法读取，已显示内置的 7 个兑换码，可正常复制。个人文件已保留，修复前暂不能保存新码。";
+        }
+        _rows.Children.Clear();
         foreach (var entry in entries)
         {
             var row = new Grid { Margin = new Thickness(0, 0, 0, 9) };

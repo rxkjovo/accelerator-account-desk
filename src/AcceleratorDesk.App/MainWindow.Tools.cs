@@ -8,6 +8,11 @@ namespace AcceleratorDesk.App;
 
 public partial class MainWindow
 {
+    private void CheckUpdates_Click(object sender, RoutedEventArgs e) => RunUi(() =>
+    {
+        new Dialogs.UpdateWindow(_dataDirectory) { Owner = this }.ShowDialog();
+    });
+    internal void ShowUpdateMessage(string message) => SetStatus(message);
     private void RedemptionCodes_Click(object sender, RoutedEventArgs e) => RunUi(() =>
     {
         new Dialogs.RedemptionCodesWindow(new RedemptionCodeStore(_dataDirectory)) { Owner = this }.ShowDialog();

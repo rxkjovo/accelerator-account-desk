@@ -13,6 +13,7 @@ public sealed record QqRegistrationDraft
     public string Nickname { get; init; } = "";
     public string Password { get; init; } = "";
     public bool SubmissionAttempted { get; init; }
+    public bool MobileRegistrationRequired { get; init; }
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
 
     public override string ToString() => "QQ 注册待确认草稿（敏感信息已隐藏）";

@@ -40,9 +40,21 @@ public sealed class QqRegistrationSession
     public void MarkSubmitted()
     {
         var draft = Draft ?? throw new InvalidOperationException("请先选择手机号并开始注册。");
+        if (draft.MobileRegistrationRequired) throw new InvalidOperationException(QqRegistrationPolicy.MobileRegistrationMessage);
         ValidateDraftPhone();
         var updated = draft with { SubmissionAttempted = true };
         _drafts.Save(updated); Draft = updated;
+    }
+
+    public bool ObserveMobileRegistrationRequirement(string? source, string visibleText)
+    {
+        if (SavedAccountId is not null || !QqRegistrationPolicy.RequiresMobileRegistration(source, visibleText)) return false;
+        if (Draft is { MobileRegistrationRequired: false } draft)
+        {
+            var updated = draft with { MobileRegistrationRequired = true };
+            _drafts.Save(updated); Draft = updated;
+        }
+        return true;
     }
 
     public void ReleaseUnsentSubmission()
@@ -53,7 +65,7 @@ public sealed class QqRegistrationSession
     }
     public bool AllowCorrectedCodeRetry(string source, string visibleText)
     {
-        if (Draft is not { SubmissionAttempted: true } || SavedAccountId is not null || !QqRegistrationPolicy.IsRegistrationPage(source)) return false;
+        if (Draft is not { SubmissionAttempted: true, MobileRegistrationRequired: false } || SavedAccountId is not null || !QqRegistrationPolicy.IsRegistrationPage(source)) return false;
         if (!Regex.IsMatch(visibleText, "验证码错误|验证码不正确|验证码已过期|验证码已失效")) return false;
         ReleaseUnsentSubmission(); return true;
     }
@@ -61,7 +73,7 @@ public sealed class QqRegistrationSession
     public bool TrySaveOfficialResult(string source, string visibleText)
     {
         if (SavedAccountId is not null) return true;
-        if (Draft is not { SubmissionAttempted: true } draft) return false;
+        if (Draft is not { SubmissionAttempted: true, MobileRegistrationRequired: false } draft) return false;
         var qq = QqRegistrationPolicy.ReadSuccessfulQq(source, visibleText, draft.PhoneNumber);
         if (qq is null) return false;
         SaveConfirmed(qq, draft.Password); return true;

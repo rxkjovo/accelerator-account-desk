@@ -6,6 +6,12 @@ namespace AcceleratorDesk.App.Services;
 public static class QqRegistrationPolicy
 {
     public const string RegistrationUrl = "https://ssl.zc.qq.com/v5/index/?lang=zhCN";
+    public const string MobileRegistrationPattern = @"(?:需要|请)[您你]?(?:下载|使用)手机\s*QQ\s*注册(?:账号|帐号)?";
+    public const string MobileRegistrationMessage = "QQ 官方提示本次需使用手机 QQ 注册，网页注册已停止，草稿已保留。注册成功后可在下方手动保存实际 QQ 号和密码；软件生成的密码不一定是实际密码。";
+
+    public static bool RequiresMobileRegistration(string? source, string visibleText) => IsRegistrationPage(source)
+        && Regex.IsMatch(visibleText, MobileRegistrationPattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
     public static bool IsRegistrationPage(string? source) => OfficialUri(source) is { } uri
         && uri.Host.Equals("ssl.zc.qq.com", StringComparison.OrdinalIgnoreCase)
         && uri.AbsolutePath == "/v5/index/";

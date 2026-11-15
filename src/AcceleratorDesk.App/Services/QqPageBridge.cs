@@ -8,10 +8,12 @@ public static class QqPageBridge
 
     private static string Script(string body) => "(()=>{" + Guard + body + "})()";
     private static string Json(string value) => JsonSerializer.Serialize(value);
+    private static readonly string MobileGuard = "if(new RegExp(" + Json(QqRegistrationPolicy.MobileRegistrationPattern) + ",'i').test(document.body?document.body.innerText:''))return {ok:false,requiresMobile:true,text:document.body.innerText,message:" + Json(QqRegistrationPolicy.MobileRegistrationMessage) + "};";
+    private static string ActionScript(string body) => Script(MobileGuard + body);
     private const string SetInput = "function setInput(e,v){if(e.value===v)return;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,v);e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));}";
     private const string Accepted = "function accepted(e){return /(?:^|[;&\\s])is_check_agree=1(?:$|[;&\\s])/.test(e.getAttribute('dt-params')||'')||e.getAttribute('aria-checked')==='true'||e.classList.contains('agreement-checkbox--checked')||!!e.querySelector('.agreement-checkbox__box svg');}";
 
-    public static string Fill(string phone, string nickname, string password) => Script(SetInput + $$"""
+    public static string Fill(string phone, string nickname, string password) => ActionScript(SetInput + $$"""
         const phone=document.querySelector('input[placeholder="输入手机号码"]');
         const nickname=document.querySelector('input[placeholder="输入昵称"]');
         const password=document.querySelector('input[placeholder="输入QQ密码"][type="password"]');
@@ -20,17 +22,17 @@ public static class QqPageBridge
         return {ok:true,message:'注册资料已填写。'};
         """);
 
-    public static string RequestSms() => Script("""
+    public static string RequestSms() => ActionScript("""
         const button=document.querySelector('.send-code-button');
         if(!button||button.textContent.trim()!=='发送验证码'||button.classList.contains('send-code-button--disabled')||button.getAttribute('aria-disabled')==='true')
             return {ok:false,message:'验证码按钮尚不可用；请查看右侧号码提示或安全验证，勿连续重试。'};
-        button.click();return {ok:true,message:'已请求验证码；请留意短信及右侧官方验证提示。'};
-        """);
+        button.click();
+        """ + MobileGuard + "return {ok:true,message:'已点击获取验证码，正在等待官方页面响应；尚未确认短信是否发送。'};");
 
     public static string PrepareSubmission(string code, bool userAcceptedAgreement)
     {
         if (!userAcceptedAgreement) return "({ok:false,message:'请本人阅读协议后点击同意协议并注册。'})";
-        return Script(SetInput + Accepted + $$"""
+        return ActionScript(SetInput + Accepted + $$"""
             const code=document.querySelector('input[placeholder="短信验证码"]');
             const agreement=document.querySelector('.agreement-checkbox');
             if(!code||!agreement||!agreement.querySelector('.agreement-checkbox__box'))return {ok:false,message:'未找到官方验证码或协议控件，请在右侧完成注册。'};
@@ -40,7 +42,7 @@ public static class QqPageBridge
             """);
     }
 
-    public static string Submit(string phone) => Script(Accepted + $$"""
+    public static string Submit(string phone) => ActionScript(Accepted + $$"""
         const phone=document.querySelector('input[placeholder="输入手机号码"]');
         const agreement=document.querySelector('.agreement-checkbox');
         const buttons=[...document.querySelectorAll('button')].filter(e=>e.textContent.trim()==='立即注册');

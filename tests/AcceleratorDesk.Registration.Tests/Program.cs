@@ -90,7 +90,10 @@ internal static class Program
             });
             await Check("SMS request performs one explicit click", async () =>
             {
-                Equal(true, (await Execute(QqPageBridge.RequestSms())).GetProperty("ok").GetBoolean());
+                var result = await Execute(QqPageBridge.RequestSms());
+                Equal(true, result.GetProperty("ok").GetBoolean());
+                var message = result.GetProperty("message").GetString() ?? "";
+                Equal(false, message.Contains("已请求验证码") || message.Contains("已发送") || message.Contains("发送成功"));
                 Equal(1, (await Execute("window.smsRequests")).GetInt32()); Equal(0, (await Execute("window.submissions")).GetInt32());
             });
             await Check("submission preparation without consent leaves agreement and code untouched", async () =>
@@ -126,7 +129,28 @@ internal static class Program
                 var result = await Execute(QqPageBridge.VisibleText()); Equal(true, result.GetProperty("ok").GetBoolean());
                 Equal("9081762354", QqRegistrationPolicy.ReadSuccessfulQq(browser.Source.AbsoluteUri, result.GetProperty("text").GetString()!, "13800138000"));
             });
+            fixtureDocument = Fixture.Replace("window.smsRequests++", "window.smsRequests++;document.body.insertAdjacentHTML('beforeend','<p>由于安全限制，需要您下载手机QQ注册账号</p>')");
+            await Navigate(QqRegistrationPolicy.RegistrationUrl);
+            await Check("immediate mobile-only response rejects further actions without extra SMS or submissions", async () =>
+            {
+                var result = await Execute(QqPageBridge.RequestSms());
+                Equal(false, result.GetProperty("ok").GetBoolean());
+                Equal(true, result.GetProperty("requiresMobile").GetBoolean());
+                foreach (var script in new[] { QqPageBridge.Fill("13800138000", "测试", "LocalFixtureOnly2"), QqPageBridge.RequestSms(), QqPageBridge.PrepareSubmission("123456", true), QqPageBridge.Submit("13800138000") })
+                    Equal(false, (await Execute(script)).GetProperty("ok").GetBoolean());
+                Equal(1, (await Execute("window.smsRequests")).GetInt32());
+                Equal(0, (await Execute("window.submissions")).GetInt32());
+                Equal(0, (await Execute("window.inputs")).GetInt32());
+            });
+            fixtureDocument = Fixture.Replace("<h1>", "<p hidden>由于安全限制，需要您下载手机QQ注册账号</p><p>下载QQ，已安装手机QQ请登录</p><h1>");
+            await Navigate(QqRegistrationPolicy.RegistrationUrl);
+            await Check("hidden mobile-only template and ordinary download text do not block an available form", async () =>
+            {
+                Equal(true, (await Execute(QqPageBridge.RequestSms())).GetProperty("ok").GetBoolean());
+                Equal(1, (await Execute("window.smsRequests")).GetInt32());
+            });
             Console.WriteLine($"RESULT BROWSER {passed}/{total} passed; {total - passed} failed; all requests intercepted by local fixtures");
+            await RegistrationWindowChecks.Run(environment, directory);
             if (passed != total) throw new Exception("Registration bridge checks failed.");
         }
         finally { browser.Dispose(); host.Close(); }

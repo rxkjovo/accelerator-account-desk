@@ -63,7 +63,7 @@ public sealed class QqRegistrationWindow : Window
         Grid.SetRow(columns, 1); root.Children.Add(columns);
         var body = new StackPanel();
         body.Children.Add(new TextBlock { Text = "注册 QQ", FontSize = 26, FontWeight = FontWeights.SemiBold });
-        body.Children.Add(Muted("选号码，填验证码，其余交给软件。", 0, 7, 0, 22));
+        body.Children.Add(Muted("选号码、填验证码，软件辅助操作；注册方式以官方页面提示为准。", 0, 7, 0, 22));
         body.Children.Add(Label("01  选择手机号"));
         AutomationProperties.SetName(_phone, "注册手机号");
         var phoneRow = new Grid(); phoneRow.ColumnDefinitions.Add(new ColumnDefinition()); phoneRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -120,7 +120,7 @@ public sealed class QqRegistrationWindow : Window
         _poll.Tick += async (_, _) =>
         {
             if (_busy || _polling || _closed) return;
-            if (_pollStarted is { } started && DateTimeOffset.Now - started > TimeSpan.FromMinutes(2)) { _poll.Stop(); SetStatus("暂未读取到明确成功结果。资料已加密保留，可在右侧继续验证，或使用下方手动确认。"); return; }
+            if (_pollStarted is { } started && DateTimeOffset.Now - started > TimeSpan.FromMinutes(2)) { _poll.Stop(); SetStatus(_session.Draft is { SubmissionAttempted: true } ? "暂未读取到明确成功结果。资料已加密保留，可在右侧继续验证，或使用下方手动确认。" : "尚未确认短信是否发送。请核对右侧官方提示；草稿已保留，不会自动重发验证码。"); return; }
             _polling = true;
             try { await CheckResultAsync(); }
             catch (Exception ex) { if (!_closed) { _poll.Stop(); SetStatus("结果尚未保存：" + ex.Message); } }
@@ -140,7 +140,13 @@ public sealed class QqRegistrationWindow : Window
     }
     private TextBlock Label(string text) => new() { Text = text, Style = (Style)FindResource("FieldLabel") };
     private TextBlock Muted(string text, double left, double top, double right, double bottom) => new() { Text = text, Style = (Style)FindResource("MutedText"), FontSize = 12, Margin = new Thickness(left, top, right, bottom) };
-    private void SetStatus(string text) { if (!_closed) _status.Text = text; }
+    private void SetStatus(string text)
+    {
+        if (_closed) return;
+        _status.Text = _session.Draft is { MobileRegistrationRequired: true } && SavedAccountId is null
+            && !text.Contains(QqRegistrationPolicy.MobileRegistrationMessage, StringComparison.Ordinal)
+            ? QqRegistrationPolicy.MobileRegistrationMessage + "\n" + text : text;
+    }
 
     private void RefreshPhones(Guid? selected = null)
     {
@@ -175,11 +181,12 @@ public sealed class QqRegistrationWindow : Window
     {
         foreach (var button in _operations) button.IsEnabled = !_busy;
         _add.IsEnabled = !_busy && _session.Draft is null && SavedAccountId is null;
-        _start.IsEnabled = !_busy && SavedAccountId is null;
-        _submit.IsEnabled = !_busy && _session.Draft is not null && SavedAccountId is null;
+        var mobileRequired = _session.Draft?.MobileRegistrationRequired == true;
+        _start.IsEnabled = !_busy && !mobileRequired && SavedAccountId is null;
+        _submit.IsEnabled = !_busy && !mobileRequired && _session.Draft is not null && SavedAccountId is null;
         _manualSave.IsEnabled = !_busy && _session.Draft is not null && SavedAccountId is null;
         _read.IsEnabled = !_busy && _ready;
-        _code.IsEnabled = !_busy && SavedAccountId is null;
+        _code.IsEnabled = !_busy && !mobileRequired && SavedAccountId is null;
     }
 
     private async Task RunAsync(Func<Task> action)
@@ -242,6 +249,8 @@ public sealed class QqRegistrationWindow : Window
         if (!QqRegistrationPolicy.IsRegistrationPage(_browser.Source?.AbsoluteUri)) throw new InvalidOperationException("请先点击返回注册页，资料只会填写到固定 QQ 注册入口。");
         var json = await _browser.ExecuteScriptAsync(script);
         var result = JsonDocument.Parse(json).RootElement.Clone();
+        if (result.ValueKind == JsonValueKind.Object && result.TryGetProperty("requiresMobile", out var mobile) && mobile.ValueKind == JsonValueKind.True)
+            ApplyMobileRegistrationRequirement(_browser.Source?.AbsoluteUri, result.GetProperty("text").GetString() ?? "");
         if (result.ValueKind != JsonValueKind.Object || !result.TryGetProperty("ok", out var ok) || !ok.GetBoolean())
             throw new PageActionRejectedException(result.ValueKind == JsonValueKind.Object && result.TryGetProperty("message", out var message) ? message.GetString() : "页面尚不能执行此操作，请在右侧核对官方提示。");
         return result;
@@ -249,6 +258,7 @@ public sealed class QqRegistrationWindow : Window
 
     private async Task StartAsync()
     {
+        if (_session.Draft is { MobileRegistrationRequired: true }) { SetStatus(QqRegistrationPolicy.MobileRegistrationMessage); return; }
         if (_session.Draft is { SubmissionAttempted: true }) { await CheckResultAsync(); if (SavedAccountId is null) SetStatus("当前已有提交待确认。请核对右侧结果或手动补录，不会重复请求注册。"); return; }
         if (_lastSmsRequest is { } previous && DateTimeOffset.Now - previous < TimeSpan.FromSeconds(60)) throw new InvalidOperationException("请先等待短信或完成右侧安全验证，至少 60 秒后才能手动重试。");
         if (_phone.SelectedItem is not Choice<Guid> choice) throw new ArgumentException("请先添加并选择一个本人手机号。");
@@ -259,12 +269,15 @@ public sealed class QqRegistrationWindow : Window
         await Task.Delay(120);
         var result = await ExecuteAsync(QqPageBridge.RequestSms());
         _lastSmsRequest = DateTimeOffset.Now;
-        SetStatus(result.GetProperty("message").GetString() ?? "已请求验证码，请查看短信和官方验证提示。");
+        SetStatus(result.GetProperty("message").GetString() ?? "正在等待官方响应，尚未确认短信是否发送。");
+        _pollStarted = DateTimeOffset.Now; _poll.Start();
+        await CheckResultAsync();
     }
 
     private async Task SubmitAsync()
     {
         var draft = _session.Draft ?? throw new InvalidOperationException("请先选择号码并开始注册。");
+        if (draft.MobileRegistrationRequired) { SetStatus(QqRegistrationPolicy.MobileRegistrationMessage); return; }
         _session.ValidateDraftPhone();
         if (!System.Text.RegularExpressions.Regex.IsMatch(_code.Text.Trim(), @"^[0-9]{6}$")) throw new ArgumentException("请填写短信中的 6 位验证码。");
         if (draft.SubmissionAttempted) throw new InvalidOperationException("本次已提交，请先查看官方结果或手动确认，避免重复提交。");
@@ -284,12 +297,21 @@ public sealed class QqRegistrationWindow : Window
         if (_session.Draft is null || SavedAccountId is not null) return;
         var result = await ExecuteAsync(QqPageBridge.VisibleText());
         var text = result.GetProperty("text").GetString() ?? "";
+        if (ApplyMobileRegistrationRequirement(_browser.Source?.AbsoluteUri, text)) return;
+        if (_session.Draft.MobileRegistrationRequired) { SetStatus(QqRegistrationPolicy.MobileRegistrationMessage); return; }
         if (_session.TrySaveOfficialResult(_browser.Source?.AbsoluteUri ?? "", text)) ShowSaved();
         else if (_session.AllowCorrectedCodeRetry(_browser.Source?.AbsoluteUri ?? "", text))
         {
             _poll.Stop(); _code.Clear(); SetStatus("官方提示验证码错误或已失效。请核对后重新填写验证码，再点击注册；昵称和密码保持不变。");
         }
-        else SetStatus("尚未读取到明确的注册成功和 QQ 号。可继续完成官方验证，或展开下方手动确认。");
+        else SetStatus(_session.Draft.SubmissionAttempted ? "尚未读取到明确的注册成功和 QQ 号。可继续完成官方验证，或展开下方手动确认。" : "正在等待读取官方响应，尚未确认短信是否发送；请查看右侧提示和本人短信，不会自动重发。");
+    }
+    private bool ApplyMobileRegistrationRequirement(string? source, string text)
+    {
+        if (!_session.ObserveMobileRegistrationRequirement(source, text)) return false;
+        _poll.Stop(); _code.Clear();
+        SetStatus(QqRegistrationPolicy.MobileRegistrationMessage); RefreshButtons();
+        return true;
     }
     private void SaveManual()
     {

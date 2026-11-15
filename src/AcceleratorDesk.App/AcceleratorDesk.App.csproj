@@ -5,7 +5,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>AcceleratorAccountDesk</AssemblyName>
     <RootNamespace>AcceleratorDesk.App</RootNamespace>
-    <Version>0.3.1</Version>
+    <Version>0.3.2</Version>
     <Product>加速账户助手</Product>
     <Description>本地账号与加速时长记录工具</Description>
     <ApplicationManifest>app.manifest</ApplicationManifest>

@@ -8,6 +8,10 @@ namespace AcceleratorDesk.App;
 
 public partial class MainWindow
 {
+    private void RedemptionCodes_Click(object sender, RoutedEventArgs e) => RunUi(() =>
+    {
+        new Dialogs.RedemptionCodesWindow(new RedemptionCodeStore(_dataDirectory)) { Owner = this }.ShowDialog();
+    });
     private void ProviderEntry_Click(object sender, RoutedEventArgs e) => RunUi(() =>
     {
         if ((AccountsGrid.SelectedItem as AccountRow)?.Record.Provider == AccountProvider.Weibo)

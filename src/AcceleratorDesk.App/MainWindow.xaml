@@ -29,6 +29,7 @@
               <TextBlock Text="我的工作台" FontSize="12" Foreground="#A5AF98" Margin="16,0,0,18" />
               <Button x:Name="AccountsNav" Style="{StaticResource NavButton}" Click="AccountsNav_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE716;" Style="{StaticResource NavIcon}" /><TextBlock Text="账号总览" Style="{StaticResource NavLabel}" /></StackPanel></Button>
               <Button x:Name="PhonesNav" Style="{StaticResource NavButton}" Click="PhonesNav_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8EA;" Style="{StaticResource NavIcon}" /><TextBlock Text="手机号" Style="{StaticResource NavLabel}" /></StackPanel></Button>
+              <Button x:Name="RedemptionCodesButton" Style="{StaticResource NavButton}" Click="RedemptionCodes_Click" AutomationProperties.Name="兑换码"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE719;" Style="{StaticResource NavIcon}" /><TextBlock Text="兑换码" Style="{StaticResource NavLabel}" /></StackPanel></Button>
               <Button x:Name="RedemptionsNav" Style="{StaticResource NavButton}" Click="RedemptionsNav_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE81C;" Style="{StaticResource NavIcon}" /><TextBlock Text="兑换记录" Style="{StaticResource NavLabel}" /></StackPanel></Button>
               <Border Height="1" Background="#2E3427" Margin="14,18,14,20" />
               <Button x:Name="SettingsNav" Style="{StaticResource NavButton}" Click="SettingsNav_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE713;" Style="{StaticResource NavIcon}" /><TextBlock Text="设置与说明" Style="{StaticResource NavLabel}" /></StackPanel></Button>
@@ -36,7 +37,7 @@
             <StackPanel Grid.Row="2" Margin="14,0,0,0">
               <StackPanel Orientation="Horizontal"><Ellipse Width="5" Height="5" Fill="#8CA567" Margin="0,0,8,0" /><TextBlock Text="本地记录" FontSize="12" Foreground="#BAC3AC" /></StackPanel>
               <TextBlock Text="数据保存在这台电脑" FontSize="12" Foreground="#A5AF98" Margin="13,8,0,0" />
-                <TextBlock Text="v0.3.1" FontFamily="Segoe UI" FontSize="12" Foreground="#A5AF98" Margin="13,8,0,0" />
+                <TextBlock Text="v0.3.2" FontFamily="Segoe UI" FontSize="12" Foreground="#A5AF98" Margin="13,8,0,0" />
             </StackPanel>
           </Grid>
         </Border>

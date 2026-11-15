@@ -67,10 +67,15 @@ internal static class Program
             Render(password, Path.Combine(output, "account-password.png"), 650, 590);
             VerifyInputs(password);
             password.Close();
+            var codes = new RedemptionCodesWindow(new RedemptionCodeStore(data));
+            Render(codes, Path.Combine(output, "redemption-codes.png"), 790, 760);
+            VerifyInputs(codes);
+            codes.Close();
             redemptionEditor.Close();
             phoneEditor.Close();
             FormBehaviorChecks.Run(Path.Combine(data, "form-checks.db"));
             RegistrationFormChecks.Run(Path.Combine(data, "registration-form-checks"));
+            RedemptionCodeChecks.Run(Path.Combine(data, "redemption-code-checks"));
             editor.Close();
             sample.Close();
             empty.Close();

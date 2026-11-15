@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 $repoDirectory = Split-Path -Parent $PSScriptRoot
 $localSdk = Join-Path $repoDirectory '.tools\dotnet\dotnet.exe'
 $sdkCommand = if (Test-Path -LiteralPath $localSdk) { $localSdk } else { 'dotnet' }
-$outputDirectory = Join-Path $repoDirectory 'dist\加速账户助手-0.3.1'
+$outputDirectory = Join-Path $repoDirectory 'dist\加速账户助手-0.3.2'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 Push-Location $repoDirectory
 try {

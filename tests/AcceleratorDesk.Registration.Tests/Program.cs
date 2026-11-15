@@ -21,6 +21,14 @@ internal static class Program
         </script></body></html>
         """;
 
+    private const string SuccessFixture = """
+        <!doctype html><html><body><header>独立测试页面：不连接 QQ 服务</header>
+        <nav>QQ靓号<br>简体中文<br>意见反馈</nav><main><p>返回</p><h1>注册成功</h1>
+        <div>9081762354</div><p>三天内未登录，该号码将会被收回。</p>
+        <button>已安装QQ，立即登录</button><button>下载QQ</button></main>
+        <footer>Copyright © 1998-2026 Tencent All Rights Reserved.</footer></body></html>
+        """;
+
     [STAThread]
     private static int Main()
     {
@@ -47,10 +55,11 @@ internal static class Program
         {
             var environment = await CoreWebView2Environment.CreateAsync(null, directory);
             await browser.EnsureCoreWebView2Async(environment);
+            var fixtureDocument = Fixture;
             browser.CoreWebView2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
             browser.CoreWebView2.WebResourceRequested += (_, args) =>
             {
-                var data = Encoding.UTF8.GetBytes(Fixture);
+                var data = Encoding.UTF8.GetBytes(fixtureDocument);
                 args.Response = environment.CreateWebResourceResponse(new MemoryStream(data), 200, "OK", "Content-Type: text/html; charset=utf-8\r\nCache-Control: no-store");
             };
             async Task Navigate(string url)
@@ -109,6 +118,13 @@ internal static class Program
                     Equal(false, (await Execute(script)).GetProperty("ok").GetBoolean());
                 Equal("", (await Execute("document.querySelector('input[type=password]').value")).GetString());
                 Equal(0, (await Execute("window.smsRequests")).GetInt32()); Equal(0, (await Execute("window.submissions")).GetInt32());
+            });
+            fixtureDocument = SuccessFixture;
+            await Navigate(QqRegistrationPolicy.RegistrationUrl);
+            await Check("visible text from the observed unlabeled success layout identifies its sole QQ", async () =>
+            {
+                var result = await Execute(QqPageBridge.VisibleText()); Equal(true, result.GetProperty("ok").GetBoolean());
+                Equal("9081762354", QqRegistrationPolicy.ReadSuccessfulQq(browser.Source.AbsoluteUri, result.GetProperty("text").GetString()!, "13800138000"));
             });
             Console.WriteLine($"RESULT BROWSER {passed}/{total} passed; {total - passed} failed; all requests intercepted by local fixtures");
             if (passed != total) throw new Exception("Registration bridge checks failed.");

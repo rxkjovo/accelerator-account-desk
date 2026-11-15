@@ -95,6 +95,19 @@ internal static class SessionChecks
             Equal(false, session.TrySaveOfficialResult(QqRegistrationPolicy.RegistrationUrl, "验证码错误"));
             Equal(0, repository.GetAccounts().Count); Equal(true, new QqRegistrationSession(repository, directory).Draft!.SubmissionAttempted);
         });
+        Check("observed unlabeled success after explicit submission saves the original draft password", (repository, directory, phone) =>
+        {
+            var session = new QqRegistrationSession(repository, directory); var draft = session.Prepare(phone) with { Password = "LegacyDraftPwd2A" };
+            new QqRegistrationDraftStore(directory).Save(draft); session = new QqRegistrationSession(repository, directory);
+            const string visible = "QQ靓号\n简体中文\n意见反馈\n返回\n注册成功\n9081762354\n三天内未登录，该号码将会被收回。\n已安装QQ，立即登录\n下载QQ\nCopyright © 1998-2026 Tencent All Rights Reserved.";
+            Equal(false, session.TrySaveOfficialResult(QqRegistrationPolicy.RegistrationUrl, visible)); Equal(0, repository.GetAccounts().Count);
+            session.MarkSubmitted();
+            var restored = new QqRegistrationSession(repository, directory);
+            Equal(true, restored.TrySaveOfficialResult(QqRegistrationPolicy.RegistrationUrl, visible));
+            var account = repository.GetAccounts().Single(); Equal("9081762354", account.Identifier); Equal(phone.Id, account.PhoneId);
+            Equal(draft.Password, new AccountCredentialService(repository).ReadPassword(account.Id));
+            Equal<QqRegistrationDraft?>(null, new QqRegistrationDraftStore(directory).Load());
+        });
         Check("manual fallback requires user confirmation and valid QQ", (repository, directory, phone) =>
         {
             var session = new QqRegistrationSession(repository, directory); session.Prepare(phone);

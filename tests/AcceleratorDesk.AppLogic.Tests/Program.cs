@@ -58,12 +58,29 @@ Test("phone selection normalizes supported numbers and rejects other country for
     Equal("13900139000", QqRegistrationPolicy.NormalizePhone("13900139000"));
     foreach (var value in new[] { "+1 2125551234", "138001380001", "01234567890", "abc13800138000", "" }) Reject(() => QqRegistrationPolicy.NormalizePhone(value));
 });
-Test("explicit successful QQ label is required before automatic account recording", () =>
+Test("explicit success and an unambiguous QQ result are required before automatic account recording", () =>
 {
     Equal("9081762354", QqRegistrationPolicy.ReadSuccessfulQq(QqRegistrationPolicy.RegistrationUrl, "注册成功\nQQ号码：9081762354\n手机号 13800138000", "13800138000"));
     foreach (var text in new[] { "欢迎注册QQ\nQQ号：9081762354", "如果注册成功\nQQ号：9081762354", "注册未成功\nQQ号：9081762354", "注册成功\n手机号 13800138000", "注册成功\nQQ号：13800138000", "注册成功\nQQ号：9081762354\nQQ号：8019624735", "注册成功\nQQ号：9081762354\n注册失败" })
         Equal<string?>(null, QqRegistrationPolicy.ReadSuccessfulQq(QqRegistrationPolicy.RegistrationUrl, text, "13800138000"));
     Equal<string?>(null, QqRegistrationPolicy.ReadSuccessfulQq("https://evil.test/", "注册成功\nQQ号：9081762354", "13800138000"));
+});
+Test("current official success layout reads an unlabeled QQ between success and recovery notice", () =>
+{
+    const string observedLayout = "QQ靓号\n简体中文\n意见反馈\n返回\n注册成功\n\n9081762354\n\uFFFC\n三天内未登录，该号码将会被收回。\n已安装QQ，立即登录\n下载QQ\nCopyright © 1998-2026 Tencent All Rights Reserved.";
+    Equal("9081762354", QqRegistrationPolicy.ReadSuccessfulQq(QqRegistrationPolicy.RegistrationUrl, observedLayout, "13800138000"));
+    Equal("9081762354", QqRegistrationPolicy.ReadSuccessfulQq(QqRegistrationPolicy.RegistrationUrl, observedLayout.Replace("\n", "\r\n"), "13800138000"));
+    Equal<string?>(null, QqRegistrationPolicy.ReadSuccessfulQq("https://evil.test/", observedLayout, "13800138000"));
+});
+Test("unlabeled success rejects missing recovery context ambiguous numbers failure and phone results", () =>
+{
+    foreach (var text in new[] {
+        "注册成功\n9081762354", "注册成功\n9081762354\n已安装QQ，立即登录\n下载QQ",
+        "如果注册成功\n9081762354\n三天内未登录，该号码将会被收回。\n已安装QQ，立即登录\n下载QQ",
+        "注册成功\n9081762354\n三天内未登录，该号码将会被收回。\n8019624735\n已安装QQ，立即登录\n下载QQ",
+        "注册成功\n13800138000\n三天内未登录，该号码将会被收回。\n已安装QQ，立即登录\n下载QQ",
+        "注册成功\n9081762354\n三天内未登录，该号码将会被收回。\n已安装QQ，立即登录\n下载QQ\n注册失败" })
+        Equal<string?>(null, QqRegistrationPolicy.ReadSuccessfulQq(QqRegistrationPolicy.RegistrationUrl, text, "13800138000"));
 });
 Test("each registration gets an independent QQ-compatible generated password", () =>
 {
@@ -71,7 +88,7 @@ Test("each registration gets an independent QQ-compatible generated password", (
     Equal(25, generated.Select(x => x.Password).Distinct().Count());
     foreach (var value in generated)
     {
-        if (value.Password.Length != 16 || !value.Password.Any(char.IsAsciiDigit) || !value.Password.Any(char.IsAsciiLetterLower) || !value.Password.Any(char.IsAsciiLetterUpper) || value.Password.Any(x => !char.IsAsciiLetterOrDigit(x))) throw new Exception("Generated password violates QQ's visible 16-character input limit or character requirements.");
+        if (value.Password.Length is < 8 or > 10 || !value.Password.Any(char.IsAsciiDigit) || !value.Password.Any(char.IsAsciiLetterLower) || !value.Password.Any(char.IsAsciiLetterUpper) || value.Password.Any(x => !char.IsAsciiLetterOrDigit(x))) throw new Exception("Generated password is too long for the requested shorter workflow or violates QQ's character requirements.");
         if (value.Nickname.Length is < 2 or > 24) throw new Exception("Nickname violates the official input limit.");
     }
 });

@@ -126,6 +126,7 @@ internal static class RegistrationFormChecks
                 Equal(false, Field<CheckBox>(form, "本次使用软件生成的密码").IsChecked == true);
                 var actual = Field<PasswordBox>(form, "本次实际使用的密码"); actual.Password = "  actual 密码 😀  "; Invoke(form, "SaveManual");
                 Equal("  actual 密码 😀  ", new AccountCredentialService(repository).ReadPassword(draft.AccountId));
+                Equal("  actual 密码 😀  ", Field<PasswordBox>(form, "自动生成的密码").Password);
                 form.Close(); Equal("", actual.Password);
             }
             finally { form.Close(); }

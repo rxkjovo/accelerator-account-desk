@@ -36,7 +36,7 @@
             <StackPanel Grid.Row="2" Margin="14,0,0,0">
               <StackPanel Orientation="Horizontal"><Ellipse Width="5" Height="5" Fill="#8CA567" Margin="0,0,8,0" /><TextBlock Text="本地记录" FontSize="12" Foreground="#BAC3AC" /></StackPanel>
               <TextBlock Text="数据保存在这台电脑" FontSize="12" Foreground="#A5AF98" Margin="13,8,0,0" />
-              <TextBlock Text="v0.3.0" FontFamily="Segoe UI" FontSize="12" Foreground="#A5AF98" Margin="13,8,0,0" />
+                <TextBlock Text="v0.3.1" FontFamily="Segoe UI" FontSize="12" Foreground="#A5AF98" Margin="13,8,0,0" />
             </StackPanel>
           </Grid>
         </Border>

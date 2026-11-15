@@ -29,10 +29,21 @@ public static class QqRegistrationPolicy
     {
         if (!IsRegistrationPage(source) || string.IsNullOrWhiteSpace(visibleText)) return null;
         if (Regex.IsMatch(visibleText, "注册失败|注册未成功|尚未注册成功|未完成注册")) return null;
-        var success = visibleText.Split('\n').Any(line => Regex.IsMatch(line.Trim(), @"^(?:恭喜(?:你|您)?[，,！!\s]*)?(?:QQ(?:账号|帐号|号)?\s*)?注册成功[！!。\s]*$"));
-        if (!success) return null;
+        var lines = visibleText.Split('\n').Select(line => line.Replace("\uFFFC", "").Trim()).Where(line => line.Length > 0).ToArray();
+        var successLines = Enumerable.Range(0, lines.Length).Where(index => Regex.IsMatch(lines[index], @"^(?:恭喜(?:你|您)?[，,！!\s]*)?(?:QQ(?:账号|帐号|号)?\s*)?注册成功[！!。\s]*$")).ToArray();
+        if (successLines.Length == 0) return null;
         var matches = Regex.Matches(visibleText, @"(?:QQ\s*(?:号码|号|账号|帐号)|您的QQ号|你的QQ号)[\s:：]*(?<qq>[1-9][0-9]{4,11})(?![0-9])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)
             .Select(match => match.Groups["qq"].Value).Distinct().ToList();
+        // The observed official success page omits the QQ label. Require its complete result context.
+        if (matches.Count == 0 && successLines.Length == 1)
+        {
+            var resultIndex = successLines[0] + 1;
+            var numericLines = lines.Where(line => Regex.IsMatch(line, @"^[1-9][0-9]{4,11}$")).ToArray();
+            if (resultIndex + 1 < lines.Length && numericLines.Length == 1 && lines[resultIndex] == numericLines[0]
+                && Regex.IsMatch(lines[resultIndex + 1], @"^三天内未登录[，,]\s*该号码将会被收回[。.!！]?$")
+                && visibleText.Contains("已安装QQ，立即登录", StringComparison.Ordinal) && visibleText.Contains("下载QQ", StringComparison.Ordinal))
+                matches.Add(numericLines[0]);
+        }
         if (matches.Count != 1) return null;
         var phoneDigits = new string(phoneNumber.Where(char.IsAsciiDigit).ToArray());
         return phoneDigits.EndsWith(matches[0], StringComparison.Ordinal) && matches[0].Length == 11 ? null : matches[0];
@@ -41,7 +52,7 @@ public static class QqRegistrationPolicy
     public static (string Nickname, string Password) CreateCredentials()
     {
         const string alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-        var password = new char[16];
+        var password = new char[10];
         password[0] = 'A'; password[1] = 'a'; password[2] = '2';
         for (var i = 3; i < password.Length; i++) password[i] = alphabet[RandomNumberGenerator.GetInt32(alphabet.Length)];
         for (var i = password.Length - 1; i > 0; i--)

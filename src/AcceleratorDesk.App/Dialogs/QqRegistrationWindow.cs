@@ -79,17 +79,19 @@ public sealed class QqRegistrationWindow : Window
         links.Children.Add(Operation("隐私政策", () => NavigateOfficial("https://ti.qq.com/doc/redirect/qq-privacy-guild"), false, quiet: true)); body.Children.Add(links);
         var statusBorder = new Border { Background = (Brush)FindResource("Panel"), BorderBrush = (Brush)FindResource("Line"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(13), Margin = new Thickness(0, 16, 0, 15), Child = _status };
         AutomationProperties.SetName(_status, "注册进度"); body.Children.Add(statusBorder);
+        body.Children.Add(Label("本次账号密码"));
+        _password.IsEnabled = false; body.Children.Add(_password); body.Children.Add(_visiblePassword);
+        AutomationProperties.SetName(_password, "自动生成的密码"); AutomationProperties.SetName(_visiblePassword, "已显示的注册密码");
+        var passwordActions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 10) };
+        var reveal = new CheckBox { Content = "显示本次密码", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
+        reveal.Checked += (_, _) => { _visiblePassword.Text = _password.Password; _visiblePassword.Visibility = Visibility.Visible; _password.Visibility = Visibility.Collapsed; };
+        reveal.Unchecked += (_, _) => { _visiblePassword.Clear(); _visiblePassword.Visibility = Visibility.Collapsed; _password.Visibility = Visibility.Visible; }; passwordActions.Children.Add(reveal);
+        passwordActions.Children.Add(Operation("复制本次密码", () => { SecretClipboard.Copy(_password.Password); SetStatus("密码已复制；30 秒后会尝试清除未被替换的剪贴板内容。"); }, false));
+        body.Children.Add(passwordActions);
         var extra = new StackPanel();
         extra.Children.Add(Label("自动生成的昵称")); extra.Children.Add(_nickname);
-        extra.Children.Add(new TextBlock { Text = "本次密码", Style = (Style)FindResource("FieldLabel"), Margin = new Thickness(0, 12, 0, 7) });
-        _password.IsEnabled = false; extra.Children.Add(_password); extra.Children.Add(_visiblePassword);
-        AutomationProperties.SetName(_password, "自动生成的密码"); AutomationProperties.SetName(_visiblePassword, "已显示的注册密码");
-        var reveal = new CheckBox { Content = "显示本次密码", Margin = new Thickness(0, 12, 0, 10) };
-        reveal.Checked += (_, _) => { _visiblePassword.Text = _password.Password; _visiblePassword.Visibility = Visibility.Visible; };
-        reveal.Unchecked += (_, _) => { _visiblePassword.Clear(); _visiblePassword.Visibility = Visibility.Collapsed; }; extra.Children.Add(reveal);
-        extra.Children.Add(Operation("复制本次密码", () => { SecretClipboard.Copy(_password.Password); SetStatus("密码已复制；30 秒后会尝试清除未被替换的剪贴板内容。"); }, false));
         extra.Children.Add(Operation("放弃当前草稿并重新选择", ResetDraft, false));
-        body.Children.Add(new Expander { Header = "查看本次资料与恢复草稿", Content = extra, Margin = new Thickness(0, 0, 0, 14) });
+        body.Children.Add(new Expander { Header = "昵称与草稿管理", Content = extra, Margin = new Thickness(0, 0, 0, 14) });
         var manual = new StackPanel();
         manual.Children.Add(Muted("自动读取不成功时，将官方成功页的 QQ 号粘贴到这里。", 0, 10, 0, 10));
         AutomationProperties.SetName(_qq, "注册成功的 QQ 号"); manual.Children.Add(_qq);
@@ -298,6 +300,8 @@ public sealed class QqRegistrationWindow : Window
     {
         _poll.Stop();
         var account = _repository.GetAccounts().Single(x => x.Id == SavedAccountId);
+        _password.Password = new AccountCredentialService(_repository).ReadPassword(account.Id) ?? "";
+        if (_visiblePassword.Visibility == Visibility.Visible) _visiblePassword.Text = _password.Password;
         _qq.Text = account.Identifier; _code.Clear();
         SetStatus($"已保存 QQ：{account.Identifier}\n关联手机号和加密密码已保存，可返回账号列表查看。" + (_session.CleanupWarning.Length > 0 ? "\n" + _session.CleanupWarning : ""));
         RefreshButtons();

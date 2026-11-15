@@ -7,6 +7,7 @@ namespace AcceleratorDesk.Core;
 /// <summary>Local records only. Each operation owns its connection; successful redemption effects share a transaction.</summary>
 public sealed class DeskRepository
 {
+    private const int MaximumProtectedPasswordBytes = 65_536;
     private readonly string _databasePath;
     private readonly string _connectionString;
 
@@ -30,6 +31,11 @@ public sealed class DeskRepository
         WithConnection(connection =>
         {
             using var transaction = connection.BeginTransaction();
+            using (var version = Command(connection, transaction, "PRAGMA user_version"))
+            {
+                if (Convert.ToInt64(version.ExecuteScalar(), CultureInfo.InvariantCulture) > 2)
+                    throw new InvalidOperationException("数据库由较新的软件版本创建，请使用新版软件打开，避免覆盖已有数据。");
+            }
             using var command = Command(connection, transaction, """
                 CREATE TABLE IF NOT EXISTS phones (
                     id TEXT PRIMARY KEY, number TEXT NOT NULL, label TEXT NOT NULL, official_restriction_note TEXT NOT NULL,
@@ -45,6 +51,11 @@ public sealed class DeskRepository
                     official_notice TEXT NOT NULL, notes TEXT NOT NULL,
                     UNIQUE(provider, identifier)
                 );
+                CREATE TABLE IF NOT EXISTS account_secrets (
+                    account_id TEXT NOT NULL PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+                    protected_password BLOB NOT NULL
+                        CHECK(typeof(protected_password) = 'blob' AND length(protected_password) BETWEEN 1 AND 65536)
+                );
                 CREATE TABLE IF NOT EXISTS redemptions (
                     id TEXT PRIMARY KEY, account_id TEXT NOT NULL REFERENCES accounts(id), code TEXT NOT NULL,
                     outcome INTEGER NOT NULL CHECK(outcome IN (0, 1, 2)), redeemed_at TEXT NOT NULL,
@@ -52,7 +63,7 @@ public sealed class DeskRepository
                     account_effect_applied INTEGER NOT NULL DEFAULT 0 CHECK(account_effect_applied IN (0, 1))
                 );
                 CREATE INDEX IF NOT EXISTS ix_redemptions_account_id ON redemptions(account_id);
-                PRAGMA user_version = 1;
+                PRAGMA user_version = 2;
                 """);
             command.ExecuteNonQuery(); transaction.Commit(); return 0;
         });
@@ -117,7 +128,29 @@ public sealed class DeskRepository
         });
     }
 
-    public void SaveAccount(AccountRecord account)
+    /// <summary>Saves ordinary account edits without changing any saved credential.</summary>
+    public void SaveAccount(AccountRecord account) => SaveAccountInternal(account, null);
+
+    /// <summary>Atomically saves an account and an opaque, already protected credential. Never accepts plaintext.</summary>
+    public void SaveAccount(AccountRecord account, byte[] protectedPassword)
+    {
+        if (protectedPassword is null || protectedPassword.Length is < 1 or > MaximumProtectedPasswordBytes)
+            throw new ArgumentException("加密密码数据不能为空且不能超过 64 KiB，请重新输入并保存密码。", nameof(protectedPassword));
+        SaveAccountInternal(account, protectedPassword);
+    }
+
+    public byte[]? GetProtectedPassword(Guid accountId)
+    {
+        RequireId(accountId, "账号");
+        return WithConnection(connection =>
+        {
+            using var command = Command(connection, null, "SELECT protected_password FROM account_secrets WHERE account_id=$id");
+            Add(command, "$id", accountId);
+            return command.ExecuteScalar() as byte[];
+        });
+    }
+
+    private void SaveAccountInternal(AccountRecord account, byte[]? protectedPassword)
     {
         if (account is null) throw new ArgumentException("请提供要保存的账号记录。", nameof(account));
         RequireId(account.Id, "账号");
@@ -157,7 +190,16 @@ public sealed class DeskRepository
             Add(command, "$created", account.CreatedAt); Add(command, "$expiry", account.ExpiresAt); Add(command, "$cancellation", (int)account.CancellationState);
             Add(command, "$requested", account.CancellationRequestedAt); Add(command, "$completed", account.CancellationCompletedAt);
             Add(command, "$wait", account.OfficialWaitUntil); Add(command, "$notice", account.OfficialNotice ?? ""); Add(command, "$notes", account.Notes ?? "");
-            command.ExecuteNonQuery(); transaction.Commit(); return 0;
+            command.ExecuteNonQuery();
+            if (protectedPassword is not null)
+            {
+                using var secret = Command(connection, transaction, """
+                    INSERT INTO account_secrets (account_id, protected_password) VALUES ($id, $password)
+                    ON CONFLICT(account_id) DO UPDATE SET protected_password=excluded.protected_password
+                    """);
+                Add(secret, "$id", account.Id); Add(secret, "$password", protectedPassword); secret.ExecuteNonQuery();
+            }
+            transaction.Commit(); return 0;
         });
     }
 
